@@ -49,15 +49,6 @@ static void executeJSFunctionFromReservedSpot(JSContext *cx, JSObject *obj,
     //  }
 }
 
-void ScriptingCore::executeJSFunctionWithThisObj(jsval thisObj, jsval callback,
-                                                 jsval data) {
-    jsval retval;
-    if(callback != JSVAL_VOID || thisObj != JSVAL_VOID) {
-        JS_CallFunctionValue(cx, JSVAL_TO_OBJECT(thisObj), callback, 1, &data, &retval);
-    }
-}
-
-
 static void executeJSFunctionWithName(JSContext *cx, JSObject *obj,
                                       const char *funcName, jsval &dataVal,
                                       jsval &retval) {
@@ -341,22 +332,6 @@ JSBool ScriptingCore::log(JSContext* cx, uint32_t argc, jsval *vp)
 	}
 	return JS_TRUE;
 }
-
-
-void ScriptingCore::removeJSObjectByCCObject(void* cobj) {
-
-    js_proxy_t* nproxy;
-    js_proxy_t* jsproxy;
-    void *ptr = cobj;
-    JS_GET_PROXY(nproxy, ptr);
-    if (nproxy) {
-        JSContext *cx = ScriptingCore::getInstance()->getGlobalContext();
-        JS_GET_NATIVE_PROXY(jsproxy, nproxy->obj);
-        JS_RemoveObjectRoot(cx, &jsproxy->obj);
-        JS_REMOVE_PROXY(nproxy, jsproxy);
-    }
-}
-
 
 JSBool ScriptingCore::setReservedSpot(uint32_t i, JSObject *obj, jsval value) {
 	JS_SetReservedSlot(obj, i, value);
@@ -670,12 +645,6 @@ int ScriptingCore::executeCustomTouchEvent(int eventType,
 
 }
 
-
-int ScriptingCore::executeSchedule(int nHandler, float dt, CCNode *self) {
-
-    executeFunctionWithFloatData(nHandler, dt, self);
-    return 1;
-}
 
 long long jsval_to_long_long(JSContext *cx, jsval v) {
     JSObject *tmp = JSVAL_TO_OBJECT(v);
