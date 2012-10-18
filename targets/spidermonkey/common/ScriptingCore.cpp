@@ -150,27 +150,27 @@ ScriptingCore::ScriptingCore()
 
 void ScriptingCore::string_report(jsval val) {
     if (JSVAL_IS_NULL(val)) {
-        LOGD("val : (JSVAL_IS_NULL(val)");
+        js_log("val : (JSVAL_IS_NULL(val)");
         // return 1;
     } else if ((JSVAL_IS_BOOLEAN(val)) &&
                (JS_FALSE == (JSVAL_TO_BOOLEAN(val)))) {
-        LOGD("val : (return value is JS_FALSE");
+        js_log("val : (return value is JS_FALSE");
         // return 1;
     } else if (JSVAL_IS_STRING(val)) {
         JSString *str = JS_ValueToString(this->getGlobalContext(), val);
         if (NULL == str) {
-            LOGD("val : return string is NULL");
+            js_log("val : return string is NULL");
         } else {
-            LOGD("val : return string =\n%s\n",
+            js_log("val : return string =\n%s\n",
                  JS_EncodeString(this->getGlobalContext(), str));
         }
     } else if (JSVAL_IS_NUMBER(val)) {
         double number;
         if (JS_FALSE ==
             JS_ValueToNumber(this->getGlobalContext(), val, &number)) {
-            LOGD("val : return number could not be converted");
+            js_log("val : return number could not be converted");
         } else {
-            LOGD("val : return number =\n%f", number);
+            js_log("val : return number =\n%f", number);
         }
     }
 }
@@ -183,7 +183,7 @@ JSBool ScriptingCore::evalString(const char *string, jsval *outVal, const char *
         filename_script[filename] = script;
         JSBool evaluatedOK = JS_ExecuteScript(_cx, global, script, &rval);
         if (JS_FALSE == evaluatedOK) {
-            LOGD(stderr, "(evaluatedOK == JS_FALSE)");
+            js_log(stderr, "(evaluatedOK == JS_FALSE)");
         }
         return evaluatedOK;
     }
@@ -507,7 +507,7 @@ JSBool ScriptingCore::addRootJS(JSContext *cx, uint32_t argc, jsval *vp)
         JSObject *o = NULL;
         if (JS_ConvertArguments(cx, argc, JS_ARGV(cx, vp), "o", &o) == JS_TRUE) {
             if (JS_AddNamedObjectRoot(cx, &o, "from-js") == JS_FALSE) {
-                LOGD("something went wrong when setting an object to the root");
+                js_log("something went wrong when setting an object to the root");
             }
         }
         return JS_TRUE;
