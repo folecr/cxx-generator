@@ -23,6 +23,8 @@
 #define  LOGD(...)  __android_log_print(ANDROID_LOG_DEBUG,LOG_TAG,__VA_ARGS__)
 #endif
 
+using namespace jsb;
+
 js_proxy_t *_native_js_global_ht = NULL;
 js_proxy_t *_js_native_global_ht = NULL;
 js_type_class_t *_js_global_type_ht = NULL;
@@ -414,7 +416,7 @@ JSBool ScriptingCore::removeRootJS(JSContext *cx, uint32_t argc, jsval *vp)
     return JS_FALSE;
 }
 
-int ScriptingCore::executeFunctionWithIntegerData(int nHandler, int data, CCNode *self) {
+int ScriptingCore::executeFunctionWithIntegerData(int nHandler, int data, cocos2d::CCNode *self) {
     js_proxy_t * p;
     JS_GET_PROXY(p, self);
 
@@ -426,23 +428,22 @@ int ScriptingCore::executeFunctionWithIntegerData(int nHandler, int data, CCNode
     JS_GET_PROXY(proxy, self);
 
     std::string funcName = "";
-    if(data == kCCNodeOnEnter) {
+    if(data == cocos2d::kCCNodeOnEnter) {
         executeJSFunctionWithName(this->cx, p->obj, "onEnter", dataVal, retval);
-    } else if(data == kCCNodeOnExit) {
+    } else if(data == cocos2d::kCCNodeOnExit) {
         executeJSFunctionWithName(this->cx, p->obj, "onExit", dataVal, retval);
-    } else if(data == kCCMenuItemActivated) {
+    } else if(data == cocos2d::kCCMenuItemActivated) {
         dataVal = (proxy ? OBJECT_TO_JSVAL(proxy->obj) : JSVAL_NULL);
         executeJSFunctionFromReservedSpot(this->cx, p->obj, dataVal, retval);
-    } else if(data == kCCNodeOnEnterTransitionDidFinish) {
+    } else if(data == cocos2d::kCCNodeOnEnterTransitionDidFinish) {
         executeJSFunctionWithName(this->cx, p->obj, "onEnterTransitionDidFinish", dataVal, retval);
-    } else if(data == kCCNodeOnExitTransitionDidStart) {
+    } else if(data == cocos2d::kCCNodeOnExitTransitionDidStart) {
         executeJSFunctionWithName(this->cx, p->obj, "onExitTransitionDidStart", dataVal, retval);
     }
     return 1;
 }
 
-
-int ScriptingCore::executeFunctionWithObjectData(int nHandler, const char *name, JSObject *obj, CCNode *self) {
+int ScriptingCore::executeFunctionWithObjectData(int nHandler, const char *name, JSObject *obj, cocos2d::CCNode *self) {
 
     js_proxy_t * p;
     JS_GET_PROXY(p, self);
@@ -456,8 +457,7 @@ int ScriptingCore::executeFunctionWithObjectData(int nHandler, const char *name,
     return 1;
 }
 
-
-int ScriptingCore::executeFunctionWithFloatData(int nHandler, float data, CCNode *self) {
+int ScriptingCore::executeFunctionWithFloatData(int nHandler, float data, cocos2d::CCNode *self) {
 
 
     js_proxy_t * p;
@@ -477,16 +477,16 @@ int ScriptingCore::executeFunctionWithFloatData(int nHandler, float data, CCNode
 
 static void getTouchesFuncName(int eventType, std::string &funcName) {
     switch(eventType) {
-        case CCTOUCHBEGAN:
+        case cocos2d::CCTOUCHBEGAN:
             funcName = "onTouchesBegan";
             break;
-        case CCTOUCHENDED:
+        case cocos2d::CCTOUCHENDED:
             funcName = "onTouchesEnded";
             break;
-        case CCTOUCHMOVED:
+        case cocos2d::CCTOUCHMOVED:
             funcName = "onTouchesMoved";
             break;
-        case CCTOUCHCANCELLED:
+        case cocos2d::CCTOUCHCANCELLED:
             funcName = "onTouchesCancelled";
             break;
     }
@@ -495,16 +495,16 @@ static void getTouchesFuncName(int eventType, std::string &funcName) {
 
 static void getTouchFuncName(int eventType, std::string &funcName) {
     switch(eventType) {
-        case CCTOUCHBEGAN:
+        case cocos2d::CCTOUCHBEGAN:
             funcName = "onTouchBegan";
             break;
-        case CCTOUCHENDED:
+        case cocos2d::CCTOUCHENDED:
             funcName = "onTouchEnded";
             break;
-        case CCTOUCHMOVED:
+        case cocos2d::CCTOUCHMOVED:
             funcName = "onTouchMoved";
             break;
-        case CCTOUCHCANCELLED:
+        case cocos2d::CCTOUCHCANCELLED:
             funcName = "onTouchCancelled";
             break;
     }
@@ -523,7 +523,7 @@ static void unRootObject(JSContext *cx, JSObject *obj) {
 
 
 
-static void getJSTouchObject(JSContext *cx, CCTouch *x, jsval &jsret) {
+static void getJSTouchObject(JSContext *cx, cocos2d::CCTouch *x, jsval &jsret) {
     js_type_class_t *classType;
     TypeTest<cocos2d::CCTouch> t;
     uint32_t typeId = t.s_id();
@@ -539,7 +539,7 @@ static void getJSTouchObject(JSContext *cx, CCTouch *x, jsval &jsret) {
 }
 
 
-static void removeJSTouchObject(JSContext *cx, CCTouch *x, jsval &jsret) {
+static void removeJSTouchObject(JSContext *cx, cocos2d::CCTouch *x, jsval &jsret) {
     js_proxy_t* nproxy;
     js_proxy_t* jsproxy;
     void *ptr = x;
@@ -553,7 +553,7 @@ static void removeJSTouchObject(JSContext *cx, CCTouch *x, jsval &jsret) {
 
 
 int ScriptingCore::executeTouchesEvent(int nHandler, int eventType,
-                                       CCSet *pTouches, CCNode *self) {
+                                       cocos2d::CCSet *pTouches, cocos2d::CCNode *self) {
 
     std::string funcName = "";
     getTouchesFuncName(eventType, funcName);
@@ -562,9 +562,9 @@ int ScriptingCore::executeTouchesEvent(int nHandler, int eventType,
 
     JS_AddNamedObjectRoot(this->cx, &jsretArr, "touchArray");
     int count = 0;
-    for(CCSetIterator it = pTouches->begin(); it != pTouches->end(); ++it, ++count) {
+    for(cocos2d::CCSetIterator it = pTouches->begin(); it != pTouches->end(); ++it, ++count) {
         jsval jsret;
-        getJSTouchObject(this->cx, (CCTouch *) *it, jsret);
+        getJSTouchObject(this->cx, (cocos2d::CCTouch *) *it, jsret);
         if(!JS_SetElement(this->cx, jsretArr, count, &jsret)) {
             break;
         }
@@ -574,9 +574,9 @@ int ScriptingCore::executeTouchesEvent(int nHandler, int eventType,
 
     JS_RemoveObjectRoot(this->cx, &jsretArr);
 
-    for(CCSetIterator it = pTouches->begin(); it != pTouches->end(); ++it, ++count) {
+    for(cocos2d::CCSetIterator it = pTouches->begin(); it != pTouches->end(); ++it, ++count) {
         jsval jsret;
-        removeJSTouchObject(this->cx, (CCTouch *) *it, jsret);
+        removeJSTouchObject(this->cx, (cocos2d::CCTouch *) *it, jsret);
     }
 
 
@@ -584,7 +584,7 @@ int ScriptingCore::executeTouchesEvent(int nHandler, int eventType,
 }
 
 int ScriptingCore::executeCustomTouchesEvent(int eventType,
-                                       CCSet *pTouches, JSObject *obj)
+                                             cocos2d::CCSet *pTouches, JSObject *obj)
 {
 
     jsval retval;
@@ -594,9 +594,9 @@ int ScriptingCore::executeCustomTouchesEvent(int eventType,
     JSObject *jsretArr = JS_NewArrayObject(this->cx, 0, NULL);
     JS_AddNamedObjectRoot(this->cx, &jsretArr, "touchArray");
     int count = 0;
-    for(CCSetIterator it = pTouches->begin(); it != pTouches->end(); ++it, ++count) {
+    for(cocos2d::CCSetIterator it = pTouches->begin(); it != pTouches->end(); ++it, ++count) {
         jsval jsret;
-        getJSTouchObject(this->cx, (CCTouch *) *it, jsret);
+        getJSTouchObject(this->cx, (cocos2d::CCTouch *) *it, jsret);
         if(!JS_SetElement(this->cx, jsretArr, count, &jsret)) {
             break;
         }
@@ -606,9 +606,9 @@ int ScriptingCore::executeCustomTouchesEvent(int eventType,
     executeJSFunctionWithName(this->cx, obj, funcName.c_str(), jsretArrVal, retval);
     JS_RemoveObjectRoot(this->cx, &jsretArr);
 
-    for(CCSetIterator it = pTouches->begin(); it != pTouches->end(); ++it, ++count) {
+    for(cocos2d::CCSetIterator it = pTouches->begin(); it != pTouches->end(); ++it, ++count) {
         jsval jsret;
-        removeJSTouchObject(this->cx, (CCTouch *) *it, jsret);
+        removeJSTouchObject(this->cx, (cocos2d::CCTouch *) *it, jsret);
     }
 
     return 1;
@@ -616,7 +616,7 @@ int ScriptingCore::executeCustomTouchesEvent(int eventType,
 
 
 int ScriptingCore::executeCustomTouchEvent(int eventType,
-                                           CCTouch *pTouch, JSObject *obj) {
+                                           cocos2d::CCTouch *pTouch, JSObject *obj) {
     jsval retval;
     std::string funcName;
     getTouchFuncName(eventType, funcName);
@@ -631,7 +631,7 @@ int ScriptingCore::executeCustomTouchEvent(int eventType,
 
 
 int ScriptingCore::executeCustomTouchEvent(int eventType,
-                                           CCTouch *pTouch, JSObject *obj,
+                                           cocos2d::CCTouch *pTouch, JSObject *obj,
                                            jsval &retval) {
 
     std::string funcName;
@@ -669,7 +669,7 @@ const char* jsval_to_c_string(JSContext *cx, jsval v) {
     return JS_EncodeString(cx, tmp);
 }
 
-CCPoint jsval_to_ccpoint(JSContext *cx, jsval v) {
+cocos2d::CCPoint jsval_to_ccpoint(JSContext *cx, jsval v) {
     JSObject *tmp;
     jsval jsx, jsy;
     double x, y;
@@ -682,7 +682,7 @@ CCPoint jsval_to_ccpoint(JSContext *cx, jsval v) {
     return cocos2d::CCPoint(x, y);
 }
 
-CCRect jsval_to_ccrect(JSContext *cx, jsval v) {
+cocos2d::CCRect jsval_to_ccrect(JSContext *cx, jsval v) {
     JSObject *tmp;
     jsval jsx, jsy, jswidth, jsheight;
     double x, y, width, height;
@@ -699,7 +699,7 @@ CCRect jsval_to_ccrect(JSContext *cx, jsval v) {
     return cocos2d::CCRect(x, y, width, height);
 }
 
-CCSize jsval_to_ccsize(JSContext *cx, jsval v) {
+cocos2d::CCSize jsval_to_ccsize(JSContext *cx, jsval v) {
     JSObject *tmp;
     jsval jsw, jsh;
     double w, h;
@@ -712,7 +712,7 @@ CCSize jsval_to_ccsize(JSContext *cx, jsval v) {
     return cocos2d::CCSize(w, h);
 }
 
-ccGridSize jsval_to_ccgridsize(JSContext *cx, jsval v) {
+cocos2d::ccGridSize jsval_to_ccgridsize(JSContext *cx, jsval v) {
     JSObject *tmp;
     jsval jsx, jsy;
     double x, y;
@@ -725,7 +725,7 @@ ccGridSize jsval_to_ccgridsize(JSContext *cx, jsval v) {
     return cocos2d::ccg(x, y);
 }
 
-ccColor4B jsval_to_cccolor4b(JSContext *cx, jsval v) {
+cocos2d::ccColor4B jsval_to_cccolor4b(JSContext *cx, jsval v) {
     JSObject *tmp;
     jsval jsr, jsg, jsb, jsa;
     double r, g, b, a;
@@ -742,7 +742,7 @@ ccColor4B jsval_to_cccolor4b(JSContext *cx, jsval v) {
     return cocos2d::ccc4(r, g, b, a);
 }
 
-ccColor4F jsval_to_cccolor4f(JSContext *cx, jsval v) {
+cocos2d::ccColor4F jsval_to_cccolor4f(JSContext *cx, jsval v) {
     JSObject *tmp;
     jsval jsr, jsg, jsb, jsa;
     double r, g, b, a;
@@ -759,7 +759,7 @@ ccColor4F jsval_to_cccolor4f(JSContext *cx, jsval v) {
     return cocos2d::ccc4f(r, g, b, a);
 }
 
-ccColor3B jsval_to_cccolor3b(JSContext *cx, jsval v) {
+cocos2d::ccColor3B jsval_to_cccolor3b(JSContext *cx, jsval v) {
     JSObject *tmp;
     jsval jsr, jsg, jsb;
     double r, g, b;
@@ -774,12 +774,12 @@ ccColor3B jsval_to_cccolor3b(JSContext *cx, jsval v) {
     return cocos2d::ccc3(r, g, b);
 }
 
-CCArray* jsval_to_ccarray(JSContext* cx, jsval v) {
+cocos2d::CCArray* jsval_to_ccarray(JSContext* cx, jsval v) {
     JSObject *arr;
     if (JS_ValueToObject(cx, v, &arr) && JS_IsArrayObject(cx, arr)) {
         uint32_t len = 0;
         JS_GetArrayLength(cx, arr, &len);
-        CCArray* ret = CCArray::createWithCapacity(len);
+        cocos2d::CCArray* ret = cocos2d::CCArray::createWithCapacity(len);
         for (int i=0; i < len; i++) {
             jsval elt;
             JSObject *elto;
@@ -787,7 +787,7 @@ CCArray* jsval_to_ccarray(JSContext* cx, jsval v) {
                 js_proxy_t *proxy;
                 JS_GET_NATIVE_PROXY(proxy, elto);
                 if (proxy) {
-                    ret->addObject((CCObject *)proxy->ptr);
+                    ret->addObject((cocos2d::CCObject *)proxy->ptr);
                 }
             }
         }
@@ -797,13 +797,13 @@ CCArray* jsval_to_ccarray(JSContext* cx, jsval v) {
 }
 
 
-jsval ccarray_to_jsval(JSContext* cx, CCArray *arr) {
+jsval ccarray_to_jsval(JSContext* cx, cocos2d::CCArray *arr) {
 
   JSObject *jsretArr = JS_NewArrayObject(cx, 0, NULL);
 
   for(int i = 0; i < arr->count(); ++i) {
 
-    CCObject *obj = arr->objectAtIndex(i);
+    cocos2d::CCObject *obj = arr->objectAtIndex(i);
     js_proxy_t *proxy = js_get_or_create_proxy<cocos2d::CCObject>(cx, obj);
     jsval arrElement = OBJECT_TO_JSVAL(proxy->obj);
 
@@ -832,7 +832,7 @@ jsval c_string_to_jsval(JSContext* cx, const char* v) {
     return STRING_TO_JSVAL(str);
 }
 
-jsval ccpoint_to_jsval(JSContext* cx, CCPoint& v) {
+jsval ccpoint_to_jsval(JSContext* cx, cocos2d::CCPoint& v) {
     JSObject *tmp = JS_NewObject(cx, NULL, NULL, NULL);
     if (!tmp) return JSVAL_NULL;
     JSBool ok = JS_DefineProperty(cx, tmp, "x", DOUBLE_TO_JSVAL(v.x), NULL, NULL, JSPROP_ENUMERATE | JSPROP_PERMANENT) &&
@@ -843,7 +843,7 @@ jsval ccpoint_to_jsval(JSContext* cx, CCPoint& v) {
     return JSVAL_NULL;
 }
 
-jsval ccrect_to_jsval(JSContext* cx, CCRect& v) {
+jsval ccrect_to_jsval(JSContext* cx, cocos2d::CCRect& v) {
     JSObject *tmp = JS_NewObject(cx, NULL, NULL, NULL);
     if (!tmp) return JSVAL_NULL;
     JSBool ok = JS_DefineProperty(cx, tmp, "x", DOUBLE_TO_JSVAL(v.origin.x), NULL, NULL, JSPROP_ENUMERATE | JSPROP_PERMANENT) &&
@@ -856,7 +856,7 @@ jsval ccrect_to_jsval(JSContext* cx, CCRect& v) {
     return JSVAL_NULL;
 }
 
-jsval ccsize_to_jsval(JSContext* cx, CCSize& v) {
+jsval ccsize_to_jsval(JSContext* cx, cocos2d::CCSize& v) {
     JSObject *tmp = JS_NewObject(cx, NULL, NULL, NULL);
     if (!tmp) return JSVAL_NULL;
     JSBool ok = JS_DefineProperty(cx, tmp, "width", DOUBLE_TO_JSVAL(v.width), NULL, NULL, JSPROP_ENUMERATE | JSPROP_PERMANENT) &&
@@ -867,7 +867,7 @@ jsval ccsize_to_jsval(JSContext* cx, CCSize& v) {
     return JSVAL_NULL;
 }
 
-jsval ccgridsize_to_jsval(JSContext* cx, ccGridSize& v) {
+jsval ccgridsize_to_jsval(JSContext* cx, cocos2d::ccGridSize& v) {
     JSObject *tmp = JS_NewObject(cx, NULL, NULL, NULL);
     if (!tmp) return JSVAL_NULL;
     JSBool ok = JS_DefineProperty(cx, tmp, "x", DOUBLE_TO_JSVAL(v.x), NULL, NULL, JSPROP_ENUMERATE | JSPROP_PERMANENT) &&
@@ -878,7 +878,7 @@ jsval ccgridsize_to_jsval(JSContext* cx, ccGridSize& v) {
     return JSVAL_NULL;
 }
 
-jsval cccolor4b_to_jsval(JSContext* cx, ccColor4B& v) {
+jsval cccolor4b_to_jsval(JSContext* cx, cocos2d::ccColor4B& v) {
     JSObject *tmp = JS_NewObject(cx, NULL, NULL, NULL);
     if (!tmp) return JSVAL_NULL;
     JSBool ok = JS_DefineProperty(cx, tmp, "r", INT_TO_JSVAL(v.r), NULL, NULL, JSPROP_ENUMERATE | JSPROP_PERMANENT) &&
@@ -891,7 +891,7 @@ jsval cccolor4b_to_jsval(JSContext* cx, ccColor4B& v) {
     return JSVAL_NULL;
 }
 
-jsval cccolor4f_to_jsval(JSContext* cx, ccColor4F& v) {
+jsval cccolor4f_to_jsval(JSContext* cx, cocos2d::ccColor4F& v) {
     JSObject *tmp = JS_NewObject(cx, NULL, NULL, NULL);
     if (!tmp) return JSVAL_NULL;
     JSBool ok = JS_DefineProperty(cx, tmp, "r", DOUBLE_TO_JSVAL(v.r), NULL, NULL, JSPROP_ENUMERATE | JSPROP_PERMANENT) &&
@@ -904,7 +904,7 @@ jsval cccolor4f_to_jsval(JSContext* cx, ccColor4F& v) {
     return JSVAL_NULL;
 }
 
-jsval cccolor3b_to_jsval(JSContext* cx, ccColor3B& v) {
+jsval cccolor3b_to_jsval(JSContext* cx, cocos2d::ccColor3B& v) {
     JSObject *tmp = JS_NewObject(cx, NULL, NULL, NULL);
     if (!tmp) return JSVAL_NULL;
     JSBool ok = JS_DefineProperty(cx, tmp, "r", INT_TO_JSVAL(v.r), NULL, NULL, JSPROP_ENUMERATE | JSPROP_PERMANENT) &&
