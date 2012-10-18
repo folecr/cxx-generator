@@ -19,13 +19,8 @@
 #include <android/log.h>
 #include <android/asset_manager.h>
 #include <jni/JniHelper.h>
-#endif
-
-#ifdef ANDROID
 #define  LOG_TAG    "ScriptingCore.cpp"
 #define  LOGD(...)  __android_log_print(ANDROID_LOG_DEBUG,LOG_TAG,__VA_ARGS__)
-#else
-#define  LOGD(...) js_log(__VA_ARGS__)
 #endif
 
 js_proxy_t *_native_js_global_ht = NULL;
@@ -92,7 +87,7 @@ void ScriptingCore::js_log(const char *format, ...) {
     va_end(vl);
     if (len) {
 #ifdef ANDROID
-        __android_log_print(ANDROID_LOG_DEBUG, "js_log", _js_log_buf);
+        __android_log_print(ANDROID_LOG_DEBUG, "JS: ", _js_log_buf);
 #else
         fprintf(stderr, "JS: %s\n", _js_log_buf);
 #endif
@@ -266,87 +261,6 @@ void ScriptingCore::createGlobalContext() {
     }
 }
 
-
-#ifdef ANDROID
-
-static unsigned long
-fileutils_read_into_new_memory(const char* relativepath,
-                               unsigned char** content) {
-    *content = NULL;
-
-    AAssetManager* assetmanager =
-        JniHelper::getAssetManager();
-    if (NULL == assetmanager) {
-        LOGD("assetmanager : is NULL");
-        return 0;
-    }
-
-    // read asset data
-    AAsset* asset =
-        AAssetManager_open(assetmanager,
-                           relativepath,
-                           AASSET_MODE_UNKNOWN);
-    if (NULL == asset) {
-        LOGD("asset : is NULL");
-        return 0;
-    }
-
-    off_t size = AAsset_getLength(asset);
-    LOGD("size = %d ", size);
-
-    unsigned char* buf =
-        (unsigned char*) malloc((sizeof(unsigned char)) * (size+1));
-    if (NULL == buf) {
-        LOGD("memory allocation failed");
-        AAsset_close(asset);
-        return 0;
-    }
-
-    int bytesread = AAsset_read(asset, buf, size);
-    LOGD("bytesread = %d ", bytesread);
-    buf[bytesread] = '\0';
-
-    AAsset_close(asset);
-
-    *content = (unsigned char*) buf;
-    return bytesread;
-}
-
-JSBool ScriptingCore::runScript(const char *path)
-{
-    LOGD("ScriptingCore::runScript(%s)", path);
-
-    if (NULL == path) {
-        return JS_FALSE;
-    }
-
-    unsigned char* content = NULL;
-    unsigned long contentsize = 0;
-
-    contentsize = fileutils_read_into_new_memory(path, &content);
-
-    if (NULL == content) {
-        LOGD("(NULL == content)");
-        return JS_FALSE;
-    }
-
-    if (contentsize <= 0) {
-        LOGD("(contentsize <= 0)");
-        free(content);
-        return JS_FALSE;
-    }
-
-    jsval rval;
-    JSBool ret = this->evalString((const char *)content, &rval, path);
-    free(content);
-
-    LOGD("... ScriptingCore::runScript(%s) done successfully.", path);
-
-    return ret;
-}
-
-#else
-
 static size_t readFileInMemory(const char *path, unsigned char **buff) {
     struct stat buf;
     int file = open(path, O_RDONLY);
@@ -394,8 +308,6 @@ JSBool ScriptingCore::runScript(const char *path, JSObject* glob, JSContext* cx_
     }
     return evaluatedOK;
 }
-
-#endif
 
 ScriptingCore::~ScriptingCore()
 {
