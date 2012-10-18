@@ -82,7 +82,7 @@ static void executeJSFunctionWithName(JSContext *cx, JSObject *obj,
 
 }
 
-void js_log(const char *format, ...) {
+void ScriptingCore::js_log(const char *format, ...) {
     if (_js_log_buf == NULL) {
         _js_log_buf = (char *)calloc(sizeof(char), 257);
     }
@@ -99,7 +99,7 @@ void js_log(const char *format, ...) {
     }
 }
 
-void registerDefaultClasses(JSContext* cx, JSObject* global) {
+void ScriptingCore::registerDefaultClasses(JSContext* cx, JSObject* global) {
     if (!JS_InitStandardClasses(cx, global)) {
         js_log("error initializing the standard classes");
     }

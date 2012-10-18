@@ -16,13 +16,9 @@
 #include "jsfriendapi.h"
 #include "spidermonkey_specifics.h"
 
-void js_log(const char *format, ...);
-
 using namespace cocos2d;
 
 typedef void (*sc_register_sth)(JSContext* cx, JSObject* global);
-
-void registerDefaultClasses(JSContext* cx, JSObject* global);
 
 class ScriptingCore : public CCScriptEngineProtocol
 {
@@ -39,7 +35,9 @@ public:
 		return &instance;
 	};
 
-	lua_State* getLuaState(void) {}
+    static void js_log(const char *format, ...);
+
+    registerDefaultClasses(JSContext* cx, JSObject* global);
 
     /**
      @brief Remove CCObject from lua state
