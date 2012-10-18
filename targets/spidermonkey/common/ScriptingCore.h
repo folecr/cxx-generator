@@ -6,8 +6,8 @@
 //  Copyright (c) 2012 Zynga Inc. All rights reserved.
 //
 
-#ifndef __SCRIPTING_CORE_H__
-#define __SCRIPTING_CORE_H__
+#ifndef __JSB_SCRIPTING_CORE_H__
+#define __JSB_SCRIPTING_CORE_H__
 
 #include <assert.h>
 #include "cocos2d.h"
@@ -22,22 +22,18 @@ typedef void (*sc_register_sth)(JSContext* cx, JSObject* global);
 
 class ScriptingCore : public CCScriptEngineProtocol
 {
-	JSRuntime *rt;
-	JSContext *cx;
-	JSObject  *global;
 
-	ScriptingCore();
 public:
-	~ScriptingCore();
 
 	static ScriptingCore *getInstance() {
 		static ScriptingCore instance;
 		return &instance;
 	};
 
-    static void js_log(const char *format, ...);
-
-    registerDefaultClasses(JSContext* cx, JSObject* global);
+	/**
+	 * initialize everything
+	 */
+	void start();
 
 	/**
 	 * will eval the specified string
@@ -54,15 +50,9 @@ public:
 	JSBool runScript(const char *path, JSObject* glob = NULL, JSContext* cx_ = NULL);
 
 	/**
-	 * initialize everything
+	 * run a script from script :)
 	 */
-	void start();
-
-	/**
-	 * will add the register_sth callback to the list of functions that need to be called
-	 * after the creation of the context
-	 */
-	void addRegisterCallback(sc_register_sth callback);
+	static JSBool executeScript(JSContext *cx, uint32_t argc, jsval *vp);
 
 	/**
 	 * Will create a new context. If one is already there, it will destroy the old context
@@ -70,15 +60,6 @@ public:
 	 */
 	void createGlobalContext();
 
-    static void removeAllRoots(JSContext *cx);
-
-
-    int executeCustomTouchEvent(int eventType,
-                                CCTouch *pTouch, JSObject *obj, jsval &retval);
-    int executeCustomTouchEvent(int eventType,
-                                CCTouch *pTouch, JSObject *obj);
-    int executeCustomTouchesEvent(int eventType,
-                                  CCSet *pTouches, JSObject *obj);
 	/**
 	 * @return the global context
 	 */
@@ -87,11 +68,29 @@ public:
 	};
 
 	/**
+	 * will add the register_sth callback to the list of functions that need to be called
+	 * after the creation of the context
+	 */
+	void addRegisterCallback(sc_register_sth callback);
+
+    void registerDefaultClasses(JSContext* cx, JSObject* global);
+
+    int executeCustomTouchEvent(int eventType,
+                                CCTouch *pTouch, JSObject *obj, jsval &retval);
+
+    int executeCustomTouchEvent(int eventType,
+                                CCTouch *pTouch, JSObject *obj);
+
+    int executeCustomTouchesEvent(int eventType,
+                                  CCSet *pTouches, JSObject *obj);
+	/**
 	 * @param cx
 	 * @param message
 	 * @param report
 	 */
 	static void reportError(JSContext *cx, const char *message, JSErrorReport *report);
+
+    static void js_log(const char *format, ...);
 
 	/**
 	 * Log something using CCLog
@@ -104,22 +103,31 @@ public:
 	JSBool setReservedSpot(uint32_t i, JSObject *obj, jsval value);
 
 	/**
-	 * run a script from script :)
-	 */
-	static JSBool executeScript(JSContext *cx, uint32_t argc, jsval *vp);
-
-	/**
 	 * Force a cycle of GC
 	 * @param cx
 	 * @param argc
 	 * @param vp
 	 */
 	static JSBool forceGC(JSContext *cx, uint32_t argc, jsval *vp);
+
+    static void removeAllRoots(JSContext *cx);
+
 	static JSBool dumpRoot(JSContext *cx, uint32_t argc, jsval *vp);
+
 	static JSBool addRootJS(JSContext *cx, uint32_t argc, jsval *vp);
+
 	static JSBool removeRootJS(JSContext *cx, uint32_t argc, jsval *vp);
 
- private:
+	~ScriptingCore();
+
+protected:
+
+	JSRuntime *rt;
+	JSContext *cx;
+	JSObject  *global;
+
+	ScriptingCore();
+
     void string_report(jsval val);
 };
 
@@ -156,4 +164,4 @@ JSBool jsSocketRead(JSContext* cx, unsigned argc, jsval* vp);
 JSBool jsSocketWrite(JSContext* cx, unsigned argc, jsval* vp);
 JSBool jsSocketClose(JSContext* cx, unsigned argc, jsval* vp);
 
-#endif
+#endif // __JSB_SCRIPTING_CORE_H__
