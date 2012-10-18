@@ -6,7 +6,7 @@ LOCAL_MODULE := scriptingcore-spidermonkey
 
 LOCAL_MODULE_FILENAME := libscriptingcore-spidermonkey
 
-LOCAL_SRC_FILES := ScriptingCore.cpp
+LOCAL_SRC_FILES := jsbScriptingCore.cpp
 
 LOCAL_C_INCLUDES := $(LOCAL_PATH)
 
