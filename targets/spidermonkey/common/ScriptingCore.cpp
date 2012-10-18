@@ -166,13 +166,17 @@ void ScriptingCore::string_report(jsval val) {
 JSBool ScriptingCore::evalString(const char *string, jsval *outVal, const char *filename)
 {
     jsval rval;
+    const char *fname = (filename ? filename : "NULL");
     JSScript* script = JS_CompileScript(cx, global, string, strlen(string), filename, 1);
     if (script) {
         filename_script[filename] = script;
         JSBool evaluatedOK = JS_ExecuteScript(_cx, global, script, &rval);
         if (JS_FALSE == evaluatedOK) {
             js_log(stderr, "(evaluatedOK == JS_FALSE)");
+        } else {
+            this->string_report(*outval);
         }
+
         return evaluatedOK;
     }
     return false;
@@ -191,6 +195,22 @@ void ScriptingCore::removeAllRoots(JSContext *cx) {
     js_proxy_t *current, *tmp;
     HASH_ITER(hh, _js_native_global_ht, current, tmp) {
         JS_RemoveObjectRoot(cx, &current->obj);
+    }
+    HASH_CLEAR(hh, _js_native_global_ht);
+    HASH_CLEAR(hh, _native_js_global_ht);
+    HASH_CLEAR(hh, _js_global_type_ht);
+}
+// FIXME : merge above and below
+void ScriptingCore::removeAllRoots(JSContext *cx) {
+    js_proxy_t *current, *tmp;
+    HASH_ITER(hh, _js_native_global_ht, current, tmp) {
+        JS_RemoveObjectRoot(cx, &current->obj);
+        HASH_DEL(_js_native_global_ht, current);
+        free(current);
+    }
+    HASH_ITER(hh, _native_js_global_ht, current, tmp) {
+        HASH_DEL(_native_js_global_ht, current);
+        free(current);
     }
     HASH_CLEAR(hh, _js_native_global_ht);
     HASH_CLEAR(hh, _native_js_global_ht);
@@ -376,7 +396,7 @@ JSBool ScriptingCore::forceGC(JSContext *cx, uint32_t argc, jsval *vp)
 
 static void dumpNamedRoot(const char *name, void *addr,  JSGCRootType type, void *data)
 {
-    printf("There is a root named '%s' at %p\n", name, addr);
+    js_log("There is a root named '%s' at %p\n", name, addr);
 }
 JSBool ScriptingCore::dumpRoot(JSContext *cx, uint32_t argc, jsval *vp)
 {
@@ -414,65 +434,6 @@ JSBool ScriptingCore::removeRootJS(JSContext *cx, uint32_t argc, jsval *vp)
         return JS_TRUE;
     }
     return JS_FALSE;
-}
-
-int ScriptingCore::executeFunctionWithIntegerData(int nHandler, int data, cocos2d::CCNode *self) {
-    js_proxy_t * p;
-    JS_GET_PROXY(p, self);
-
-    if (!p) return 0;
-
-    jsval retval;
-    jsval dataVal = INT_TO_JSVAL(1);
-    js_proxy_t *proxy;
-    JS_GET_PROXY(proxy, self);
-
-    std::string funcName = "";
-    if(data == cocos2d::kCCNodeOnEnter) {
-        executeJSFunctionWithName(this->cx, p->obj, "onEnter", dataVal, retval);
-    } else if(data == cocos2d::kCCNodeOnExit) {
-        executeJSFunctionWithName(this->cx, p->obj, "onExit", dataVal, retval);
-    } else if(data == cocos2d::kCCMenuItemActivated) {
-        dataVal = (proxy ? OBJECT_TO_JSVAL(proxy->obj) : JSVAL_NULL);
-        executeJSFunctionFromReservedSpot(this->cx, p->obj, dataVal, retval);
-    } else if(data == cocos2d::kCCNodeOnEnterTransitionDidFinish) {
-        executeJSFunctionWithName(this->cx, p->obj, "onEnterTransitionDidFinish", dataVal, retval);
-    } else if(data == cocos2d::kCCNodeOnExitTransitionDidStart) {
-        executeJSFunctionWithName(this->cx, p->obj, "onExitTransitionDidStart", dataVal, retval);
-    }
-    return 1;
-}
-
-int ScriptingCore::executeFunctionWithObjectData(int nHandler, const char *name, JSObject *obj, cocos2d::CCNode *self) {
-
-    js_proxy_t * p;
-    JS_GET_PROXY(p, self);
-    if (!p) return 0;
-
-    jsval retval;
-    jsval dataVal = OBJECT_TO_JSVAL(obj);
-
-    executeJSFunctionWithName(this->cx, p->obj, name, dataVal, retval);
-
-    return 1;
-}
-
-int ScriptingCore::executeFunctionWithFloatData(int nHandler, float data, cocos2d::CCNode *self) {
-
-
-    js_proxy_t * p;
-    JS_GET_PROXY(p, self);
-
-    if (!p) return 0;
-
-    jsval retval;
-    jsval dataVal = DOUBLE_TO_JSVAL(data);
-
-    std::string funcName = "";
-
-    executeJSFunctionWithName(this->cx, p->obj, "update", dataVal, retval);
-
-    return 1;
 }
 
 static void getTouchesFuncName(int eventType, std::string &funcName) {
@@ -550,101 +511,6 @@ static void removeJSTouchObject(JSContext *cx, cocos2d::CCTouch *x, jsval &jsret
         JS_REMOVE_PROXY(nproxy, jsproxy);
     }
 }
-
-
-int ScriptingCore::executeTouchesEvent(int nHandler, int eventType,
-                                       cocos2d::CCSet *pTouches, cocos2d::CCNode *self) {
-
-    std::string funcName = "";
-    getTouchesFuncName(eventType, funcName);
-
-    JSObject *jsretArr = JS_NewArrayObject(this->cx, 0, NULL);
-
-    JS_AddNamedObjectRoot(this->cx, &jsretArr, "touchArray");
-    int count = 0;
-    for(cocos2d::CCSetIterator it = pTouches->begin(); it != pTouches->end(); ++it, ++count) {
-        jsval jsret;
-        getJSTouchObject(this->cx, (cocos2d::CCTouch *) *it, jsret);
-        if(!JS_SetElement(this->cx, jsretArr, count, &jsret)) {
-            break;
-        }
-    }
-
-    executeFunctionWithObjectData(1,  funcName.c_str(), jsretArr, self);
-
-    JS_RemoveObjectRoot(this->cx, &jsretArr);
-
-    for(cocos2d::CCSetIterator it = pTouches->begin(); it != pTouches->end(); ++it, ++count) {
-        jsval jsret;
-        removeJSTouchObject(this->cx, (cocos2d::CCTouch *) *it, jsret);
-    }
-
-
-    return 1;
-}
-
-int ScriptingCore::executeCustomTouchesEvent(int eventType,
-                                             cocos2d::CCSet *pTouches, JSObject *obj)
-{
-
-    jsval retval;
-    std::string funcName;
-    getTouchesFuncName(eventType, funcName);
-
-    JSObject *jsretArr = JS_NewArrayObject(this->cx, 0, NULL);
-    JS_AddNamedObjectRoot(this->cx, &jsretArr, "touchArray");
-    int count = 0;
-    for(cocos2d::CCSetIterator it = pTouches->begin(); it != pTouches->end(); ++it, ++count) {
-        jsval jsret;
-        getJSTouchObject(this->cx, (cocos2d::CCTouch *) *it, jsret);
-        if(!JS_SetElement(this->cx, jsretArr, count, &jsret)) {
-            break;
-        }
-    }
-
-    jsval jsretArrVal = OBJECT_TO_JSVAL(jsretArr);
-    executeJSFunctionWithName(this->cx, obj, funcName.c_str(), jsretArrVal, retval);
-    JS_RemoveObjectRoot(this->cx, &jsretArr);
-
-    for(cocos2d::CCSetIterator it = pTouches->begin(); it != pTouches->end(); ++it, ++count) {
-        jsval jsret;
-        removeJSTouchObject(this->cx, (cocos2d::CCTouch *) *it, jsret);
-    }
-
-    return 1;
-}
-
-
-int ScriptingCore::executeCustomTouchEvent(int eventType,
-                                           cocos2d::CCTouch *pTouch, JSObject *obj) {
-    jsval retval;
-    std::string funcName;
-    getTouchFuncName(eventType, funcName);
-
-    jsval jsTouch;
-    getJSTouchObject(this->cx, pTouch, jsTouch);
-
-    executeJSFunctionWithName(this->cx, obj, funcName.c_str(), jsTouch, retval);
-    return 1;
-
-}
-
-
-int ScriptingCore::executeCustomTouchEvent(int eventType,
-                                           cocos2d::CCTouch *pTouch, JSObject *obj,
-                                           jsval &retval) {
-
-    std::string funcName;
-    getTouchFuncName(eventType, funcName);
-
-    jsval jsTouch;
-    getJSTouchObject(this->cx, pTouch, jsTouch);
-
-    executeJSFunctionWithName(this->cx, obj, funcName.c_str(), jsTouch, retval);
-    return 1;
-
-}
-
 
 long long jsval_to_long_long(JSContext *cx, jsval v) {
     JSObject *tmp = JSVAL_TO_OBJECT(v);

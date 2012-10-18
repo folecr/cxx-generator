@@ -75,14 +75,6 @@ public:
 
     void registerDefaultClasses(JSContext* cx, JSObject* global);
 
-    int executeCustomTouchEvent(int eventType,
-                                cocos2d::CCTouch *pTouch, JSObject *obj, jsval &retval);
-
-    int executeCustomTouchEvent(int eventType,
-                                cocos2d::CCTouch *pTouch, JSObject *obj);
-
-    int executeCustomTouchesEvent(int eventType,
-                                  cocos2d::CCSet *pTouches, JSObject *obj);
 	/**
 	 * @param cx
 	 * @param message
