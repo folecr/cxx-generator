@@ -6,6 +6,8 @@
 #ifndef __JS_MANUAL_CONVERSIONS_H__
 #define __JS_MANUAL_CONVERSIONS_H__
 
+#include "jsapi.h"
+
 #ifdef __cplusplus
 extern "C" {
 #endif
