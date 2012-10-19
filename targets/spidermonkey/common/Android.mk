@@ -2,11 +2,12 @@ LOCAL_PATH := $(call my-dir)
 
 include $(CLEAR_VARS)
 
-LOCAL_MODULE := scriptingcore-spidermonkey
+LOCAL_MODULE := cxxgenerator-spidermonkey
 
-LOCAL_MODULE_FILENAME := libscriptingcore-spidermonkey
+LOCAL_MODULE_FILENAME := libcxxgenerator-spidermonkey
 
-LOCAL_SRC_FILES := jsbScriptingCore.cpp
+LOCAL_SRC_FILES := jsbScriptingCore.cpp \
+                   js_manual_conversions.cpp \
 
 LOCAL_C_INCLUDES := $(LOCAL_PATH)
 
@@ -19,4 +20,4 @@ LOCAL_LDLIBS += -llog
 
 include $(BUILD_STATIC_LIBRARY)
 
-$(call import-module,spidermonkey/android)
+$(call import-module,scripting/javascript/spidermonkey-android)
