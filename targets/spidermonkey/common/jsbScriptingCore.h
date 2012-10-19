@@ -47,7 +47,7 @@ public:
      * will run the specified string
      * @param string The path of the script to be run
      */
-    JSBool runScript(const char *path, JSObject* glob = NULL, JSContext* cx_ = NULL);
+    virtual JSBool runScript(const char *path, JSObject* glob = NULL, JSContext* cx_ = NULL);
 
     /**
      * run a script from script :)
