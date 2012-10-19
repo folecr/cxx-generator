@@ -34,23 +34,6 @@ std::vector<sc_register_sth> registrationList;
 std::map<std::string name, JSScript* script> filename_scripts_map;
 std::map<std::string, js::RootedObject*> globals;
 
-static void executeJSFunctionFromReservedSpot(JSContext *cx, JSObject *obj,
-                                              jsval &dataVal, jsval &retval) {
-
-    //  if(p->jsclass->JSCLASS_HAS_RESERVED_SLOTS(1)) {
-    jsval func = JS_GetReservedSlot(obj, 0);
-
-    if(func == JSVAL_VOID) { return; }
-    jsval thisObj = JS_GetReservedSlot(obj, 1);
-    if(thisObj == JSVAL_VOID) {
-        JS_CallFunctionValue(cx, obj, func, 1, &dataVal, &retval);
-    } else {
-        assert(!JSVAL_IS_PRIMITIVE(thisObj));
-        JS_CallFunctionValue(cx, JSVAL_TO_OBJECT(thisObj), func, 1, &dataVal, &retval);
-    }
-    //  }
-}
-
 static void executeJSFunctionWithName(JSContext *cx, JSObject *obj,
                                       const char *funcName, jsval &dataVal,
                                       jsval &retval) {
@@ -436,42 +419,6 @@ JSBool ScriptingCore::removeRootJS(JSContext *cx, uint32_t argc, jsval *vp)
     return JS_FALSE;
 }
 
-static void getTouchesFuncName(int eventType, std::string &funcName) {
-    switch(eventType) {
-        case cocos2d::CCTOUCHBEGAN:
-            funcName = "onTouchesBegan";
-            break;
-        case cocos2d::CCTOUCHENDED:
-            funcName = "onTouchesEnded";
-            break;
-        case cocos2d::CCTOUCHMOVED:
-            funcName = "onTouchesMoved";
-            break;
-        case cocos2d::CCTOUCHCANCELLED:
-            funcName = "onTouchesCancelled";
-            break;
-    }
-
-}
-
-static void getTouchFuncName(int eventType, std::string &funcName) {
-    switch(eventType) {
-        case cocos2d::CCTOUCHBEGAN:
-            funcName = "onTouchBegan";
-            break;
-        case cocos2d::CCTOUCHENDED:
-            funcName = "onTouchEnded";
-            break;
-        case cocos2d::CCTOUCHMOVED:
-            funcName = "onTouchMoved";
-            break;
-        case cocos2d::CCTOUCHCANCELLED:
-            funcName = "onTouchCancelled";
-            break;
-    }
-
-}
-
 static void rootObject(JSContext *cx, JSObject *obj) {
     JS_AddNamedObjectRoot(cx, &obj, "unnamed");
 }
@@ -479,37 +426,6 @@ static void rootObject(JSContext *cx, JSObject *obj) {
 
 static void unRootObject(JSContext *cx, JSObject *obj) {
     JS_RemoveObjectRoot(cx, &obj);
-}
-
-
-
-
-static void getJSTouchObject(JSContext *cx, cocos2d::CCTouch *x, jsval &jsret) {
-    js_type_class_t *classType;
-    TypeTest<cocos2d::CCTouch> t;
-    uint32_t typeId = t.s_id();
-    HASH_FIND_INT(_js_global_type_ht, &typeId, classType);
-    assert(classType);
-    JSObject *_tmp = JS_NewObject(cx, classType->jsclass, classType->proto, classType->parentProto);
-    js_proxy_t *proxy, *nproxy;
-    JS_NEW_PROXY(proxy, x, _tmp);
-    void *ptr = x;
-    JS_GET_PROXY(nproxy, ptr);
-    JS_AddNamedObjectRoot(cx, &nproxy->obj, "CCTouch");
-    jsret = OBJECT_TO_JSVAL(_tmp);
-}
-
-
-static void removeJSTouchObject(JSContext *cx, cocos2d::CCTouch *x, jsval &jsret) {
-    js_proxy_t* nproxy;
-    js_proxy_t* jsproxy;
-    void *ptr = x;
-    JS_GET_PROXY(nproxy, ptr);
-    if (nproxy) {
-        JS_RemoveObjectRoot(cx, &nproxy->obj);
-        JS_GET_NATIVE_PROXY(jsproxy, nproxy->obj);
-        JS_REMOVE_PROXY(nproxy, jsproxy);
-    }
 }
 
 long long jsval_to_long_long(JSContext *cx, jsval v) {

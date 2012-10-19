@@ -25,102 +25,107 @@ class ScriptingCore
 
 public:
 
-	static ScriptingCore *getInstance() {
-		static ScriptingCore instance;
-		return &instance;
-	};
+    static ScriptingCore *getInstance() {
+        static ScriptingCore instance;
+        return &instance;
+    };
 
-	/**
-	 * initialize everything
-	 */
-	void start();
+    /**
+     * initialize everything
+     */
+    void start();
 
-	/**
-	 * will eval the specified string
-	 * @param string The string with the javascript code to be evaluated
-	 * @param outVal The jsval that will hold the return value of the evaluation.
-	 * Can be NULL.
-	 */
-	JSBool evalString(const char *string, jsval *outVal, const char *filename = NULL);
+    /**
+     * will eval the specified string
+     * @param string The string with the javascript code to be evaluated
+     * @param outVal The jsval that will hold the return value of the evaluation.
+     * Can be NULL.
+     */
+    JSBool evalString(const char *string, jsval *outVal, const char *filename = NULL);
 
-	/**
-	 * will run the specified string
-	 * @param string The path of the script to be run
-	 */
-	JSBool runScript(const char *path, JSObject* glob = NULL, JSContext* cx_ = NULL);
+    /**
+     * will run the specified string
+     * @param string The path of the script to be run
+     */
+    JSBool runScript(const char *path, JSObject* glob = NULL, JSContext* cx_ = NULL);
 
-	/**
-	 * run a script from script :)
-	 */
-	static JSBool executeScript(JSContext *cx, uint32_t argc, jsval *vp);
+    /**
+     * run a script from script :)
+     */
+    static JSBool executeScript(JSContext *cx, uint32_t argc, jsval *vp);
 
-	/**
-	 * Will create a new context. If one is already there, it will destroy the old context
-	 * and create a new one.
-	 */
-	void createGlobalContext();
+    /**
+     * Will create a new context. If one is already there, it will destroy the old context
+     * and create a new one.
+     */
+    void createGlobalContext();
 
-	/**
-	 * @return the global context
-	 */
-	JSContext* getGlobalContext() {
-		return cx;
-	};
+    /**
+     * @return the global context
+     */
+    JSContext* getGlobalContext() {
+        return cx;
+    };
 
-	/**
-	 * will add the register_sth callback to the list of functions that need to be called
-	 * after the creation of the context
-	 */
-	void addRegisterCallback(sc_register_sth callback);
+    /**
+     * will add the register_sth callback to the list of functions that need to be called
+     * after the creation of the context
+     */
+    void addRegisterCallback(sc_register_sth callback);
 
     void registerDefaultClasses(JSContext* cx, JSObject* global);
 
-	/**
-	 * @param cx
-	 * @param message
-	 * @param report
-	 */
-	static void reportError(JSContext *cx, const char *message, JSErrorReport *report);
+    /**
+     * @param cx
+     * @param message
+     * @param report
+     */
+    static void reportError(JSContext *cx, const char *message, JSErrorReport *report);
 
     static void js_log(const char *format, ...);
 
-	/**
-	 * Log something using CCLog
-	 * @param cx
-	 * @param argc
-	 * @param vp
-	 */
-	static JSBool log(JSContext *cx, uint32_t argc, jsval *vp);
+    /**
+     * Log something using CCLog
+     * @param cx
+     * @param argc
+     * @param vp
+     */
+    static JSBool log(JSContext *cx, uint32_t argc, jsval *vp);
 
-	JSBool setReservedSpot(uint32_t i, JSObject *obj, jsval value);
+    JSBool setReservedSpot(uint32_t i, JSObject *obj, jsval value);
 
-	/**
-	 * Force a cycle of GC
-	 * @param cx
-	 * @param argc
-	 * @param vp
-	 */
-	static JSBool forceGC(JSContext *cx, uint32_t argc, jsval *vp);
+    /**
+     * Force a cycle of GC
+     * @param cx
+     * @param argc
+     * @param vp
+     */
+    static JSBool forceGC(JSContext *cx, uint32_t argc, jsval *vp);
 
     static void removeAllRoots(JSContext *cx);
 
-	static JSBool dumpRoot(JSContext *cx, uint32_t argc, jsval *vp);
+    static JSBool dumpRoot(JSContext *cx, uint32_t argc, jsval *vp);
 
-	static JSBool addRootJS(JSContext *cx, uint32_t argc, jsval *vp);
+    static JSBool addRootJS(JSContext *cx, uint32_t argc, jsval *vp);
 
-	static JSBool removeRootJS(JSContext *cx, uint32_t argc, jsval *vp);
+    static JSBool removeRootJS(JSContext *cx, uint32_t argc, jsval *vp);
 
-	~ScriptingCore();
+    ~ScriptingCore();
 
 protected:
 
-	JSRuntime *rt;
-	JSContext *cx;
-	JSObject  *global;
+    JSRuntime *rt;
+    JSContext *cx;
+    JSObject  *global;
 
-	ScriptingCore();
+    ScriptingCore();
 
     void string_report(jsval val);
+
+    static void executeJSFunctionWithName(JSContext *cx, JSObject *obj,
+                                          const char *funcName, jsval &dataVal,
+                                          jsval &retval);
+
 };
 
 } //namespace jsb
