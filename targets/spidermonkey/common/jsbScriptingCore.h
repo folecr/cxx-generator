@@ -1,5 +1,5 @@
 //
-//  ScriptingCore.h
+//  jsbScriptingCore.h
 //  testmonkey
 //
 //  Created by Rolando Abarca on 3/14/12.

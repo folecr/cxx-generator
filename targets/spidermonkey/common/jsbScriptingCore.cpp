@@ -1,5 +1,5 @@
 //
-//  ScriptingCore.cpp
+//  jsbScriptingCore.cpp
 //  testmonkey
 //
 //  Created by Rolando Abarca on 3/14/12.
@@ -12,14 +12,14 @@
 #include <sys/stat.h>
 #include <fcntl.h>
 #include <vector>
-#include "ScriptingCore.h"
+#include "jsbScriptingCore.h"
 #include "cocos2d.h"
 
 #ifdef ANDROID
 #include <android/log.h>
 #include <android/asset_manager.h>
 #include <jni/JniHelper.h>
-#define  LOG_TAG    "ScriptingCore.cpp"
+#define  LOG_TAG    "jsbScriptingCore"
 #define  LOGD(...)  __android_log_print(ANDROID_LOG_DEBUG,LOG_TAG,__VA_ARGS__)
 #endif
 
