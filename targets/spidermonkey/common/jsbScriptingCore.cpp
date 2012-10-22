@@ -31,7 +31,6 @@ js_type_class_t *_js_global_type_ht = NULL;
 char *_js_log_buf = NULL;
 
 std::vector<sc_register_sth> registrationList;
-std::map<std::string name, JSScript* script> filename_scripts_map;
 std::map<std::string, js::RootedObject*> globals;
 
 static void executeJSFunctionWithName(JSContext *cx, JSObject *obj,
