@@ -73,8 +73,6 @@ public:
      */
     void addRegisterCallback(sc_register_sth callback);
 
-    void registerDefaultClasses(JSContext* cx, JSObject* global);
-
     /**
      * @param cx
      * @param message

@@ -33,6 +33,8 @@ char *_js_log_buf = NULL;
 std::vector<sc_register_sth> registrationList;
 std::map<std::string, js::RootedObject*> globals;
 
+static void registerDefaultClasses(JSContext* cx, JSObject* global);
+
 static void executeJSFunctionWithName(JSContext *cx, JSObject *obj,
                                       const char *funcName, jsval &dataVal,
                                       jsval &retval) {
@@ -67,37 +69,6 @@ void ScriptingCore::js_log(const char *format, ...) {
         fprintf(stderr, "JS: %s\n", _js_log_buf);
 #endif
     }
-}
-
-void ScriptingCore::registerDefaultClasses(JSContext* cx, JSObject* global) {
-    if (!JS_InitStandardClasses(cx, global)) {
-        js_log("error initializing the standard classes");
-    }
-
-    //
-    // Javascript controller (__jsc__)
-    //
-    JSObject *jsc = JS_NewObject(cx, NULL, NULL, NULL);
-    jsval jscVal = OBJECT_TO_JSVAL(jsc);
-    JS_SetProperty(cx, global, "__jsc__", &jscVal);
-
-    JS_DefineFunction(cx, jsc, "garbageCollect", ScriptingCore::forceGC, 0, JSPROP_READONLY | JSPROP_PERMANENT | JSPROP_ENUMERATE );
-    JS_DefineFunction(cx, jsc, "dumpRoot", ScriptingCore::dumpRoot, 0, JSPROP_READONLY | JSPROP_PERMANENT | JSPROP_ENUMERATE );
-    JS_DefineFunction(cx, jsc, "addGCRootObject", ScriptingCore::addRootJS, 1, JSPROP_READONLY | JSPROP_PERMANENT | JSPROP_ENUMERATE );
-    JS_DefineFunction(cx, jsc, "removeGCRootObject", ScriptingCore::removeRootJS, 1, JSPROP_READONLY | JSPROP_PERMANENT | JSPROP_ENUMERATE );
-
-    // register some global functions
-    JS_DefineFunction(cx, global, "require", ScriptingCore::executeScript, 1, JSPROP_READONLY | JSPROP_PERMANENT);
-    JS_DefineFunction(cx, global, "log", ScriptingCore::log, 0, JSPROP_READONLY | JSPROP_PERMANENT);
-    JS_DefineFunction(cx, global, "forceGC", ScriptingCore::forceGC, 0, JSPROP_READONLY | JSPROP_PERMANENT);
-    // should be used only for debug
-    JS_DefineFunction(cx, global, "newGlobal", jsNewGlobal, 1, JSPROP_READONLY | JSPROP_PERMANENT);
-
-    // register the server socket
-    JS_DefineFunction(cx, glob, "_socketOpen", jsSocketOpen, 1, JSPROP_READONLY | JSPROP_PERMANENT);
-    JS_DefineFunction(cx, glob, "_socketWrite", jsSocketWrite, 1, JSPROP_READONLY | JSPROP_PERMANENT);
-    JS_DefineFunction(cx, glob, "_socketRead", jsSocketRead, 1, JSPROP_READONLY | JSPROP_PERMANENT);
-    JS_DefineFunction(cx, glob, "_socketClose", jsSocketClose, 1, JSPROP_READONLY | JSPROP_PERMANENT);
 }
 
 void sc_finalize(JSFreeOp *freeOp, JSObject *obj) {
@@ -803,4 +774,35 @@ JSBool jsSocketClose(JSContext* cx, unsigned argc, jsval* vp)
         close(s);
     }
     return JS_TRUE;
+}
+
+static void registerDefaultClasses(JSContext* cx, JSObject* global) {
+    if (!JS_InitStandardClasses(cx, global)) {
+        js_log("error initializing the standard classes");
+    }
+
+    //
+    // Javascript controller (__jsc__)
+    //
+    JSObject *jsc = JS_NewObject(cx, NULL, NULL, NULL);
+    jsval jscVal = OBJECT_TO_JSVAL(jsc);
+    JS_SetProperty(cx, global, "__jsc__", &jscVal);
+
+    JS_DefineFunction(cx, jsc, "garbageCollect", ScriptingCore::forceGC, 0, JSPROP_READONLY | JSPROP_PERMANENT | JSPROP_ENUMERATE );
+    JS_DefineFunction(cx, jsc, "dumpRoot", ScriptingCore::dumpRoot, 0, JSPROP_READONLY | JSPROP_PERMANENT | JSPROP_ENUMERATE );
+    JS_DefineFunction(cx, jsc, "addGCRootObject", ScriptingCore::addRootJS, 1, JSPROP_READONLY | JSPROP_PERMANENT | JSPROP_ENUMERATE );
+    JS_DefineFunction(cx, jsc, "removeGCRootObject", ScriptingCore::removeRootJS, 1, JSPROP_READONLY | JSPROP_PERMANENT | JSPROP_ENUMERATE );
+
+    // register some global functions
+    JS_DefineFunction(cx, global, "require", ScriptingCore::executeScript, 1, JSPROP_READONLY | JSPROP_PERMANENT);
+    JS_DefineFunction(cx, global, "log", ScriptingCore::log, 0, JSPROP_READONLY | JSPROP_PERMANENT);
+    JS_DefineFunction(cx, global, "forceGC", ScriptingCore::forceGC, 0, JSPROP_READONLY | JSPROP_PERMANENT);
+    // should be used only for debug
+    JS_DefineFunction(cx, global, "newGlobal", jsNewGlobal, 1, JSPROP_READONLY | JSPROP_PERMANENT);
+
+    // register the server socket
+    JS_DefineFunction(cx, glob, "_socketOpen", jsSocketOpen, 1, JSPROP_READONLY | JSPROP_PERMANENT);
+    JS_DefineFunction(cx, glob, "_socketWrite", jsSocketWrite, 1, JSPROP_READONLY | JSPROP_PERMANENT);
+    JS_DefineFunction(cx, glob, "_socketRead", jsSocketRead, 1, JSPROP_READONLY | JSPROP_PERMANENT);
+    JS_DefineFunction(cx, glob, "_socketClose", jsSocketClose, 1, JSPROP_READONLY | JSPROP_PERMANENT);
 }
