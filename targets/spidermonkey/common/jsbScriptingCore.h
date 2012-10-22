@@ -134,26 +134,10 @@ long long jsval_to_long_long(JSContext *cx, jsval v);
 std::string jsval_to_std_string(JSContext *cx, jsval v);
 // you should free this pointer after you're done with it
 const char* jsval_to_c_string(JSContext *cx, jsval v);
-cocos2d::CCPoint jsval_to_ccpoint(JSContext *cx, jsval v);
-cocos2d::CCRect jsval_to_ccrect(JSContext *cx, jsval v);
-cocos2d::CCSize jsval_to_ccsize(JSContext *cx, jsval v);
-cocos2d::ccGridSize jsval_to_ccgridsize(JSContext *cx, jsval v);
-cocos2d::ccColor4B jsval_to_cccolor4b(JSContext *cx, jsval v);
-cocos2d::ccColor4F jsval_to_cccolor4f(JSContext *cx, jsval v);
-cocos2d::ccColor3B jsval_to_cccolor3b(JSContext *cx, jsval v);
-cocos2d::CCArray* jsval_to_ccarray(JSContext* cx, jsval v);
-jsval ccarray_to_jsval(JSContext* cx, cocos2d::CCArray *arr);
 // from native
 jsval long_long_to_jsval(JSContext* cx, long long v);
 jsval std_string_to_jsval(JSContext* cx, std::string& v);
 jsval c_string_to_jsval(JSContext* cx, const char* v);
-jsval ccpoint_to_jsval(JSContext* cx, cocos2d::CCPoint& v);
-jsval ccrect_to_jsval(JSContext* cx, cocos2d::CCRect& v);
-jsval ccsize_to_jsval(JSContext* cx, cocos2d::CCSize& v);
-jsval ccgridsize_to_jsval(JSContext* cx, cocos2d::ccGridSize& v);
-jsval cccolor4b_to_jsval(JSContext* cx, cocos2d::ccColor4B& v);
-jsval cccolor4f_to_jsval(JSContext* cx, cocos2d::ccColor4F& v);
-jsval cccolor3b_to_jsval(JSContext* cx, cocos2d::ccColor3B& v);
 
 // this is a server socket
 JSBool jsSocketOpen(JSContext* cx, unsigned argc, jsval* vp);

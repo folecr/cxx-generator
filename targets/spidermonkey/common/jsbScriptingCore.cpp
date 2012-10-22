@@ -15,6 +15,7 @@
 #include <map>
 #include "jsbScriptingCore.h"
 #include "cocos2d.h"
+#include "jsdbgapi.h"
 
 #ifdef ANDROID
 #include <android/log.h>
@@ -145,30 +146,30 @@ void ScriptingCore::addRegisterCallback(sc_register_sth callback) {
     registrationList.push_back(callback);
 }
 
-void ScriptingCore::removeAllRoots(JSContext *cx) {
-    js_proxy_t *current, *tmp;
-    HASH_ITER(hh, _js_native_global_ht, current, tmp) {
-        JS_RemoveObjectRoot(cx, &current->obj);
-    }
-    HASH_CLEAR(hh, _js_native_global_ht);
-    HASH_CLEAR(hh, _native_js_global_ht);
-    HASH_CLEAR(hh, _js_global_type_ht);
-}
+// void ScriptingCore::removeAllRoots(JSContext *cx) {
+//     js_proxy_t *current, *tmp;
+//     HASH_ITER(hh, _js_native_global_ht, current, tmp) {
+//         JS_RemoveObjectRoot(cx, &current->obj);
+//     }
+//     HASH_CLEAR(hh, _js_native_global_ht);
+//     HASH_CLEAR(hh, _native_js_global_ht);
+//     HASH_CLEAR(hh, _js_global_type_ht);
+// }
 // FIXME : merge above and below
 void ScriptingCore::removeAllRoots(JSContext *cx) {
-    js_proxy_t *current, *tmp;
-    HASH_ITER(hh, _js_native_global_ht, current, tmp) {
-        JS_RemoveObjectRoot(cx, &current->obj);
-        HASH_DEL(_js_native_global_ht, current);
-        free(current);
-    }
-    HASH_ITER(hh, _native_js_global_ht, current, tmp) {
-        HASH_DEL(_native_js_global_ht, current);
-        free(current);
-    }
-    HASH_CLEAR(hh, _js_native_global_ht);
-    HASH_CLEAR(hh, _native_js_global_ht);
-    HASH_CLEAR(hh, _js_global_type_ht);
+    // js_proxy_t *current, *tmp;
+    // HASH_ITER(hh, _js_native_global_ht, current, tmp) {
+    //     JS_RemoveObjectRoot(cx, &current->obj);
+    //     HASH_DEL(_js_native_global_ht, current);
+    //     free(current);
+    // }
+    // HASH_ITER(hh, _native_js_global_ht, current, tmp) {
+    //     HASH_DEL(_native_js_global_ht, current);
+    //     free(current);
+    // }
+    // HASH_CLEAR(hh, _js_native_global_ht);
+    // HASH_CLEAR(hh, _native_js_global_ht);
+    // HASH_CLEAR(hh, _js_global_type_ht);
 }
 
 JSObject* NewGlobalObject(JSContext* cx)
@@ -177,7 +178,10 @@ JSObject* NewGlobalObject(JSContext* cx)
     if (!glob) {
         return NULL;
     }
-    JSAutoCompartment ac(cx, glob);
+
+    JSAutoEnterCompartment ac;
+    ac.enter(cx, glob);
+
     if (!JS_InitStandardClasses(cx, glob))
         return NULL;
     if (!JS_InitReflect(cx, glob))
@@ -266,7 +270,8 @@ JSBool ScriptingCore::runScript(const char *path, JSObject* glob, JSContext* cx_
     jsval rval;
     JSBool evaluatedOK = false;
     if (script) {
-        JSAutoCompartment ac(cx, glob);
+        JSAutoEnterCompartment ac;
+        ac.enter(cx, glob);
         evaluatedOK = JS_ExecuteScript(cx, glob, script, &rval);
         if (JS_FALSE == evaluatedOK) {
             fprintf(stderr, "(evaluatedOK == JS_FALSE)\n");
@@ -349,7 +354,7 @@ JSBool ScriptingCore::forceGC(JSContext *cx, uint32_t argc, jsval *vp)
 
 static void dumpNamedRoot(const char *name, void *addr,  JSGCRootType type, void *data)
 {
-    js_log("There is a root named '%s' at %p\n", name, addr);
+    ScriptingCore::js_log("There is a root named '%s' at %p\n", name, addr);
 }
 JSBool ScriptingCore::dumpRoot(JSContext *cx, uint32_t argc, jsval *vp)
 {
@@ -421,151 +426,6 @@ const char* jsval_to_c_string(JSContext *cx, jsval v) {
     return JS_EncodeString(cx, tmp);
 }
 
-cocos2d::CCPoint jsval_to_ccpoint(JSContext *cx, jsval v) {
-    JSObject *tmp;
-    jsval jsx, jsy;
-    double x, y;
-    JSBool ok = JS_ValueToObject(cx, v, &tmp) &&
-        JS_GetProperty(cx, tmp, "x", &jsx) &&
-        JS_GetProperty(cx, tmp, "y", &jsy) &&
-        JS_ValueToNumber(cx, jsx, &x) &&
-        JS_ValueToNumber(cx, jsy, &y);
-    assert(ok == JS_TRUE);
-    return cocos2d::CCPoint(x, y);
-}
-
-cocos2d::CCRect jsval_to_ccrect(JSContext *cx, jsval v) {
-    JSObject *tmp;
-    jsval jsx, jsy, jswidth, jsheight;
-    double x, y, width, height;
-    JSBool ok = JS_ValueToObject(cx, v, &tmp) &&
-        JS_GetProperty(cx, tmp, "x", &jsx) &&
-        JS_GetProperty(cx, tmp, "y", &jsy) &&
-        JS_GetProperty(cx, tmp, "width", &jswidth) &&
-        JS_GetProperty(cx, tmp, "height", &jsheight) &&
-        JS_ValueToNumber(cx, jsx, &x) &&
-        JS_ValueToNumber(cx, jsy, &y) &&
-        JS_ValueToNumber(cx, jswidth, &width) &&
-        JS_ValueToNumber(cx, jsheight, &height);
-    assert(ok == JS_TRUE);
-    return cocos2d::CCRect(x, y, width, height);
-}
-
-cocos2d::CCSize jsval_to_ccsize(JSContext *cx, jsval v) {
-    JSObject *tmp;
-    jsval jsw, jsh;
-    double w, h;
-    JSBool ok = JS_ValueToObject(cx, v, &tmp) &&
-        JS_GetProperty(cx, tmp, "width", &jsw) &&
-        JS_GetProperty(cx, tmp, "height", &jsh) &&
-        JS_ValueToNumber(cx, jsw, &w) &&
-        JS_ValueToNumber(cx, jsh, &h);
-    assert(ok == JS_TRUE);
-    return cocos2d::CCSize(w, h);
-}
-
-cocos2d::ccGridSize jsval_to_ccgridsize(JSContext *cx, jsval v) {
-    JSObject *tmp;
-    jsval jsx, jsy;
-    double x, y;
-    JSBool ok = JS_ValueToObject(cx, v, &tmp) &&
-        JS_GetProperty(cx, tmp, "x", &jsx) &&
-        JS_GetProperty(cx, tmp, "y", &jsy) &&
-        JS_ValueToNumber(cx, jsx, &x) &&
-        JS_ValueToNumber(cx, jsy, &y);
-    assert(ok == JS_TRUE);
-    return cocos2d::ccg(x, y);
-}
-
-cocos2d::ccColor4B jsval_to_cccolor4b(JSContext *cx, jsval v) {
-    JSObject *tmp;
-    jsval jsr, jsg, jsb, jsa;
-    double r, g, b, a;
-    JSBool ok = JS_ValueToObject(cx, v, &tmp) &&
-        JS_GetProperty(cx, tmp, "r", &jsr) &&
-        JS_GetProperty(cx, tmp, "g", &jsg) &&
-        JS_GetProperty(cx, tmp, "b", &jsb) &&
-        JS_GetProperty(cx, tmp, "a", &jsa) &&
-        JS_ValueToNumber(cx, jsr, &r) &&
-        JS_ValueToNumber(cx, jsg, &g) &&
-        JS_ValueToNumber(cx, jsb, &b) &&
-        JS_ValueToNumber(cx, jsa, &a);
-    assert(ok == JS_TRUE);
-    return cocos2d::ccc4(r, g, b, a);
-}
-
-cocos2d::ccColor4F jsval_to_cccolor4f(JSContext *cx, jsval v) {
-    JSObject *tmp;
-    jsval jsr, jsg, jsb, jsa;
-    double r, g, b, a;
-    JSBool ok = JS_ValueToObject(cx, v, &tmp) &&
-        JS_GetProperty(cx, tmp, "r", &jsr) &&
-        JS_GetProperty(cx, tmp, "g", &jsg) &&
-        JS_GetProperty(cx, tmp, "b", &jsb) &&
-        JS_GetProperty(cx, tmp, "a", &jsa) &&
-        JS_ValueToNumber(cx, jsr, &r) &&
-        JS_ValueToNumber(cx, jsg, &g) &&
-        JS_ValueToNumber(cx, jsb, &b) &&
-        JS_ValueToNumber(cx, jsa, &a);
-    assert(ok == JS_TRUE);
-    return cocos2d::ccc4f(r, g, b, a);
-}
-
-cocos2d::ccColor3B jsval_to_cccolor3b(JSContext *cx, jsval v) {
-    JSObject *tmp;
-    jsval jsr, jsg, jsb;
-    double r, g, b;
-    JSBool ok = JS_ValueToObject(cx, v, &tmp) &&
-        JS_GetProperty(cx, tmp, "r", &jsr) &&
-        JS_GetProperty(cx, tmp, "g", &jsg) &&
-        JS_GetProperty(cx, tmp, "b", &jsb) &&
-        JS_ValueToNumber(cx, jsr, &r) &&
-        JS_ValueToNumber(cx, jsg, &g) &&
-        JS_ValueToNumber(cx, jsb, &b);
-    assert(ok == JS_TRUE);
-    return cocos2d::ccc3(r, g, b);
-}
-
-cocos2d::CCArray* jsval_to_ccarray(JSContext* cx, jsval v) {
-    JSObject *arr;
-    if (JS_ValueToObject(cx, v, &arr) && JS_IsArrayObject(cx, arr)) {
-        uint32_t len = 0;
-        JS_GetArrayLength(cx, arr, &len);
-        cocos2d::CCArray* ret = cocos2d::CCArray::createWithCapacity(len);
-        for (int i=0; i < len; i++) {
-            jsval elt;
-            JSObject *elto;
-            if (JS_GetElement(cx, arr, i, &elt) && JS_ValueToObject(cx, elt, &elto)) {
-                js_proxy_t *proxy;
-                JS_GET_NATIVE_PROXY(proxy, elto);
-                if (proxy) {
-                    ret->addObject((cocos2d::CCObject *)proxy->ptr);
-                }
-            }
-        }
-        return ret;
-    }
-    return NULL;
-}
-
-
-jsval ccarray_to_jsval(JSContext* cx, cocos2d::CCArray *arr) {
-
-  JSObject *jsretArr = JS_NewArrayObject(cx, 0, NULL);
-
-  for(int i = 0; i < arr->count(); ++i) {
-
-    cocos2d::CCObject *obj = arr->objectAtIndex(i);
-    js_proxy_t *proxy = js_get_or_create_proxy<cocos2d::CCObject>(cx, obj);
-    jsval arrElement = OBJECT_TO_JSVAL(proxy->obj);
-
-    if(!JS_SetElement(cx, jsretArr, i, &arrElement)) {
-      break;
-    }
-  }
-  return OBJECT_TO_JSVAL(jsretArr);
-}
-
 jsval long_long_to_jsval(JSContext* cx, long long v) {
     JSObject *tmp = JS_NewUint32Array(cx, 2);
     uint32_t *data = (uint32_t *)JS_GetArrayBufferViewData(tmp, cx);
@@ -582,90 +442,6 @@ jsval std_string_to_jsval(JSContext* cx, std::string& v) {
 jsval c_string_to_jsval(JSContext* cx, const char* v) {
     JSString *str = JS_NewStringCopyZ(cx, v);
     return STRING_TO_JSVAL(str);
-}
-
-jsval ccpoint_to_jsval(JSContext* cx, cocos2d::CCPoint& v) {
-    JSObject *tmp = JS_NewObject(cx, NULL, NULL, NULL);
-    if (!tmp) return JSVAL_NULL;
-    JSBool ok = JS_DefineProperty(cx, tmp, "x", DOUBLE_TO_JSVAL(v.x), NULL, NULL, JSPROP_ENUMERATE | JSPROP_PERMANENT) &&
-                JS_DefineProperty(cx, tmp, "y", DOUBLE_TO_JSVAL(v.y), NULL, NULL, JSPROP_ENUMERATE | JSPROP_PERMANENT);
-    if (ok) {
-        return OBJECT_TO_JSVAL(tmp);
-    }
-    return JSVAL_NULL;
-}
-
-jsval ccrect_to_jsval(JSContext* cx, cocos2d::CCRect& v) {
-    JSObject *tmp = JS_NewObject(cx, NULL, NULL, NULL);
-    if (!tmp) return JSVAL_NULL;
-    JSBool ok = JS_DefineProperty(cx, tmp, "x", DOUBLE_TO_JSVAL(v.origin.x), NULL, NULL, JSPROP_ENUMERATE | JSPROP_PERMANENT) &&
-                JS_DefineProperty(cx, tmp, "y", DOUBLE_TO_JSVAL(v.origin.y), NULL, NULL, JSPROP_ENUMERATE | JSPROP_PERMANENT) &&
-                JS_DefineProperty(cx, tmp, "width", DOUBLE_TO_JSVAL(v.size.width), NULL, NULL, JSPROP_ENUMERATE | JSPROP_PERMANENT) &&
-                JS_DefineProperty(cx, tmp, "height", DOUBLE_TO_JSVAL(v.size.height), NULL, NULL, JSPROP_ENUMERATE | JSPROP_PERMANENT);
-    if (ok) {
-        return OBJECT_TO_JSVAL(tmp);
-    }
-    return JSVAL_NULL;
-}
-
-jsval ccsize_to_jsval(JSContext* cx, cocos2d::CCSize& v) {
-    JSObject *tmp = JS_NewObject(cx, NULL, NULL, NULL);
-    if (!tmp) return JSVAL_NULL;
-    JSBool ok = JS_DefineProperty(cx, tmp, "width", DOUBLE_TO_JSVAL(v.width), NULL, NULL, JSPROP_ENUMERATE | JSPROP_PERMANENT) &&
-                JS_DefineProperty(cx, tmp, "height", DOUBLE_TO_JSVAL(v.height), NULL, NULL, JSPROP_ENUMERATE | JSPROP_PERMANENT);
-    if (ok) {
-        return OBJECT_TO_JSVAL(tmp);
-    }
-    return JSVAL_NULL;
-}
-
-jsval ccgridsize_to_jsval(JSContext* cx, cocos2d::ccGridSize& v) {
-    JSObject *tmp = JS_NewObject(cx, NULL, NULL, NULL);
-    if (!tmp) return JSVAL_NULL;
-    JSBool ok = JS_DefineProperty(cx, tmp, "x", DOUBLE_TO_JSVAL(v.x), NULL, NULL, JSPROP_ENUMERATE | JSPROP_PERMANENT) &&
-                JS_DefineProperty(cx, tmp, "y", DOUBLE_TO_JSVAL(v.y), NULL, NULL, JSPROP_ENUMERATE | JSPROP_PERMANENT);
-    if (ok) {
-        return OBJECT_TO_JSVAL(tmp);
-    }
-    return JSVAL_NULL;
-}
-
-jsval cccolor4b_to_jsval(JSContext* cx, cocos2d::ccColor4B& v) {
-    JSObject *tmp = JS_NewObject(cx, NULL, NULL, NULL);
-    if (!tmp) return JSVAL_NULL;
-    JSBool ok = JS_DefineProperty(cx, tmp, "r", INT_TO_JSVAL(v.r), NULL, NULL, JSPROP_ENUMERATE | JSPROP_PERMANENT) &&
-                JS_DefineProperty(cx, tmp, "g", INT_TO_JSVAL(v.g), NULL, NULL, JSPROP_ENUMERATE | JSPROP_PERMANENT) &&
-                JS_DefineProperty(cx, tmp, "b", INT_TO_JSVAL(v.g), NULL, NULL, JSPROP_ENUMERATE | JSPROP_PERMANENT) &&
-                JS_DefineProperty(cx, tmp, "a", INT_TO_JSVAL(v.g), NULL, NULL, JSPROP_ENUMERATE | JSPROP_PERMANENT);
-    if (ok) {
-        return OBJECT_TO_JSVAL(tmp);
-    }
-    return JSVAL_NULL;
-}
-
-jsval cccolor4f_to_jsval(JSContext* cx, cocos2d::ccColor4F& v) {
-    JSObject *tmp = JS_NewObject(cx, NULL, NULL, NULL);
-    if (!tmp) return JSVAL_NULL;
-    JSBool ok = JS_DefineProperty(cx, tmp, "r", DOUBLE_TO_JSVAL(v.r), NULL, NULL, JSPROP_ENUMERATE | JSPROP_PERMANENT) &&
-                JS_DefineProperty(cx, tmp, "g", DOUBLE_TO_JSVAL(v.g), NULL, NULL, JSPROP_ENUMERATE | JSPROP_PERMANENT) &&
-                JS_DefineProperty(cx, tmp, "b", DOUBLE_TO_JSVAL(v.g), NULL, NULL, JSPROP_ENUMERATE | JSPROP_PERMANENT) &&
-                JS_DefineProperty(cx, tmp, "a", DOUBLE_TO_JSVAL(v.g), NULL, NULL, JSPROP_ENUMERATE | JSPROP_PERMANENT);
-    if (ok) {
-        return OBJECT_TO_JSVAL(tmp);
-    }
-    return JSVAL_NULL;
-}
-
-jsval cccolor3b_to_jsval(JSContext* cx, cocos2d::ccColor3B& v) {
-    JSObject *tmp = JS_NewObject(cx, NULL, NULL, NULL);
-    if (!tmp) return JSVAL_NULL;
-    JSBool ok = JS_DefineProperty(cx, tmp, "r", INT_TO_JSVAL(v.r), NULL, NULL, JSPROP_ENUMERATE | JSPROP_PERMANENT) &&
-                JS_DefineProperty(cx, tmp, "g", INT_TO_JSVAL(v.g), NULL, NULL, JSPROP_ENUMERATE | JSPROP_PERMANENT) &&
-                JS_DefineProperty(cx, tmp, "b", INT_TO_JSVAL(v.g), NULL, NULL, JSPROP_ENUMERATE | JSPROP_PERMANENT);
-    if (ok) {
-        return OBJECT_TO_JSVAL(tmp);
-    }
-    return JSVAL_NULL;
 }
 
 // socket code
