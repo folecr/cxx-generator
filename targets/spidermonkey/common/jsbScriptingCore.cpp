@@ -554,7 +554,7 @@ JSBool jsSocketClose(JSContext* cx, unsigned argc, jsval* vp)
 
 static void registerDefaultClasses(JSContext* cx, JSObject* global) {
     if (!JS_InitStandardClasses(cx, global)) {
-        js_log("error initializing the standard classes");
+        ScriptingCore::js_log("error initializing the standard classes");
     }
 
     //
@@ -577,8 +577,8 @@ static void registerDefaultClasses(JSContext* cx, JSObject* global) {
     JS_DefineFunction(cx, global, "newGlobal", jsNewGlobal, 1, JSPROP_READONLY | JSPROP_PERMANENT);
 
     // register the server socket
-    JS_DefineFunction(cx, glob, "_socketOpen", jsSocketOpen, 1, JSPROP_READONLY | JSPROP_PERMANENT);
-    JS_DefineFunction(cx, glob, "_socketWrite", jsSocketWrite, 1, JSPROP_READONLY | JSPROP_PERMANENT);
-    JS_DefineFunction(cx, glob, "_socketRead", jsSocketRead, 1, JSPROP_READONLY | JSPROP_PERMANENT);
-    JS_DefineFunction(cx, glob, "_socketClose", jsSocketClose, 1, JSPROP_READONLY | JSPROP_PERMANENT);
+    JS_DefineFunction(cx, global, "_socketOpen", jsSocketOpen, 1, JSPROP_READONLY | JSPROP_PERMANENT);
+    JS_DefineFunction(cx, global, "_socketWrite", jsSocketWrite, 1, JSPROP_READONLY | JSPROP_PERMANENT);
+    JS_DefineFunction(cx, global, "_socketRead", jsSocketRead, 1, JSPROP_READONLY | JSPROP_PERMANENT);
+    JS_DefineFunction(cx, global, "_socketClose", jsSocketClose, 1, JSPROP_READONLY | JSPROP_PERMANENT);
 }
