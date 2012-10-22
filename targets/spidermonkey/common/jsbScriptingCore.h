@@ -41,7 +41,7 @@ public:
      * @param outVal The jsval that will hold the return value of the evaluation.
      * Can be NULL.
      */
-    JSBool evalString(const char *string, jsval *outVal, const char *filename = NULL);
+    /* JSBool evalString(const char *string, jsval *outVal, const char *filename = NULL); */
 
     /**
      * will run the specified string

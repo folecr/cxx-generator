@@ -116,23 +116,25 @@ void ScriptingCore::string_report(jsval val) {
     }
 }
 
-JSBool ScriptingCore::evalString(const char *string, jsval *outVal, const char *filename)
-{
-    jsval rval;
-    const char *fname = (filename ? filename : "NULL");
-    JSScript* script = JS_CompileScript(cx, global, string, strlen(string), filename, 1);
-    if (script) {
-        JSBool evaluatedOK = JS_ExecuteScript(cx, global, script, &rval);
-        if (JS_FALSE == evaluatedOK) {
-            js_log(stderr, "(evaluatedOK == JS_FALSE)");
-        } else {
-            this->string_report(*outval);
-        }
+// FIXME - Remove?
+//
+// JSBool ScriptingCore::evalString(const char *string, jsval *outVal, const char *filename)
+// {
+//     jsval rval;
+//     const char *fname = (filename ? filename : "NULL");
+//     JSScript* script = JS_CompileScript(cx, global, string, strlen(string), filename, 1);
+//     if (script) {
+//         JSBool evaluatedOK = JS_ExecuteScript(cx, global, script, &rval);
+//         if (JS_FALSE == evaluatedOK) {
+//             js_log("(evaluatedOK == JS_FALSE)");
+//         } else {
+//             this->string_report(rval);
+//         }
 
-        return evaluatedOK;
-    }
-    return false;
-}
+//         return evaluatedOK;
+//     }
+//     return false;
+// }
 
 void ScriptingCore::start() {
     // for now just this
