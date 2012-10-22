@@ -122,8 +122,7 @@ JSBool ScriptingCore::evalString(const char *string, jsval *outVal, const char *
     const char *fname = (filename ? filename : "NULL");
     JSScript* script = JS_CompileScript(cx, global, string, strlen(string), filename, 1);
     if (script) {
-        filename_script[filename] = script;
-        JSBool evaluatedOK = JS_ExecuteScript(_cx, global, script, &rval);
+        JSBool evaluatedOK = JS_ExecuteScript(cx, global, script, &rval);
         if (JS_FALSE == evaluatedOK) {
             js_log(stderr, "(evaluatedOK == JS_FALSE)");
         } else {
@@ -265,7 +264,6 @@ JSBool ScriptingCore::runScript(const char *path, JSObject* glob, JSContext* cx_
     jsval rval;
     JSBool evaluatedOK = false;
     if (script) {
-        filename_script[path] = script;
         JSAutoCompartment ac(cx, glob);
         evaluatedOK = JS_ExecuteScript(cx, glob, script, &rval);
         if (JS_FALSE == evaluatedOK) {
