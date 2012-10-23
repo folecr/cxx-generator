@@ -18,15 +18,8 @@
 #include <vector>
 #include <map>
 #include "jsbScriptingCore.h"
-#include "cocos2d.h"
 #include "jsdbgapi.h"
-
-#ifdef ANDROID
-#include <android/log.h>
-#include <jni/JniHelper.h>
-#define  LOG_TAG    "jsbScriptingCore"
-#define  LOGD(...)  __android_log_print(ANDROID_LOG_DEBUG,LOG_TAG,__VA_ARGS__)
-#endif
+#include "jsbutils.h"
 
 using namespace jsb;
 
@@ -36,31 +29,11 @@ js_type_class_t *_js_global_type_ht = NULL;
 char *_js_log_buf = NULL;
 
 std::vector<sc_register_sth> registrationList;
-std::map<std::string, js::RootedObject*> globals;
 
 // port ~> socket map
 std::map<int,int> ports_sockets;
 
 static void registerDefaultClasses(JSContext* cx, JSObject* global);
-
-static void executeJSFunctionWithName(JSContext *cx, JSObject *obj,
-                                      const char *funcName, jsval &dataVal,
-                                      jsval &retval) {
-    JSBool hasAction;
-    jsval temp_retval;
-
-    if (JS_HasProperty(cx, obj, funcName, &hasAction) && hasAction) {
-        if(!JS_GetProperty(cx, obj, funcName, &temp_retval)) {
-            return;
-        }
-        if(temp_retval == JSVAL_VOID) {
-            return;
-        }
-        JS_CallFunctionName(cx, obj, funcName,
-                            1, &dataVal, &retval);
-    }
-
-}
 
 void ScriptingCore::js_log(const char *format, ...) {
     if (_js_log_buf == NULL) {
@@ -71,11 +44,7 @@ void ScriptingCore::js_log(const char *format, ...) {
     int len = vsnprintf(_js_log_buf, 256, format, vl);
     va_end(vl);
     if (len) {
-#ifdef ANDROID
-        __android_log_print(ANDROID_LOG_DEBUG, "JS: ", _js_log_buf);
-#else
         fprintf(stderr, "JS: %s\n", _js_log_buf);
-#endif
     }
 }
 
@@ -124,7 +93,7 @@ void ScriptingCore::string_report(jsval val) {
     }
 }
 
-// FIXME - Remove?
+// FIXME - evalString() unused. Remove?
 //
 // JSBool ScriptingCore::evalString(const char *string, jsval *outVal, const char *filename)
 // {
@@ -153,32 +122,6 @@ void ScriptingCore::addRegisterCallback(sc_register_sth callback) {
     registrationList.push_back(callback);
 }
 
-// void ScriptingCore::removeAllRoots(JSContext *cx) {
-//     js_proxy_t *current, *tmp;
-//     HASH_ITER(hh, _js_native_global_ht, current, tmp) {
-//         JS_RemoveObjectRoot(cx, &current->obj);
-//     }
-//     HASH_CLEAR(hh, _js_native_global_ht);
-//     HASH_CLEAR(hh, _native_js_global_ht);
-//     HASH_CLEAR(hh, _js_global_type_ht);
-// }
-// FIXME : merge above and below
-void ScriptingCore::removeAllRoots(JSContext *cx) {
-    // js_proxy_t *current, *tmp;
-    // HASH_ITER(hh, _js_native_global_ht, current, tmp) {
-    //     JS_RemoveObjectRoot(cx, &current->obj);
-    //     HASH_DEL(_js_native_global_ht, current);
-    //     free(current);
-    // }
-    // HASH_ITER(hh, _native_js_global_ht, current, tmp) {
-    //     HASH_DEL(_native_js_global_ht, current);
-    //     free(current);
-    // }
-    // HASH_CLEAR(hh, _js_native_global_ht);
-    // HASH_CLEAR(hh, _native_js_global_ht);
-    // HASH_CLEAR(hh, _js_global_type_ht);
-}
-
 JSObject* NewGlobalObject(JSContext* cx)
 {
     JSObject* glob = JS_NewGlobalObject(cx, &global_class, NULL);
@@ -197,24 +140,6 @@ JSObject* NewGlobalObject(JSContext* cx)
         return NULL;
 
     return glob;
-}
-
-JSBool jsNewGlobal(JSContext* cx, unsigned argc, jsval* vp)
-{
-    if (argc == 1) {
-        jsval *argv = JS_ARGV(cx, vp);
-        JSString *jsstr = JS_ValueToString(cx, argv[0]);
-        std::string key = JS_EncodeString(cx, jsstr);
-        js::RootedObject *global = globals[key];
-        if (!global) {
-            global = new js::RootedObject(cx, NewGlobalObject(cx));
-            JS_WrapObject(cx, global->address());
-            globals[key] = global;
-        }
-        JS_SET_RVAL(cx, vp, OBJECT_TO_JSVAL(*global));
-        return JS_TRUE;
-    }
-    return JS_FALSE;
 }
 
 void ScriptingCore::createGlobalContext() {
@@ -239,23 +164,7 @@ void ScriptingCore::createGlobalContext() {
     }
 }
 
-static size_t readFileInMemory(const char *path, unsigned char **buff) {
-    struct stat buf;
-    int file = open(path, O_RDONLY);
-    long readBytes = -1;
-    if (file) {
-        if (fstat(file, &buf) == 0) {
-            *buff = (unsigned char *)calloc(buf.st_size + 1, 1);
-            if (*buff) {
-                readBytes = read(file, *buff, buf.st_size);
-            }
-        }
-    }
-    close(file);
-    return readBytes;
-}
-
-JSBool ScriptingCore::runScript(const char *path, JSObject* glob, JSContext* cx_)
+JSBool ScriptingCore::runScript(const char *path)
 {
     cocos2d::CCFileUtils *futil = cocos2d::CCFileUtils::sharedFileUtils();
     if (!path) {
@@ -267,19 +176,14 @@ JSBool ScriptingCore::runScript(const char *path, JSObject* glob, JSContext* cx_
     } else {
         rpath = futil->fullPathFromRelativePath(path);
     }
-    if (glob == NULL) {
-        glob = global;
-    }
-    if (cx_ == NULL) {
-        cx_ = cx;
-    }
-    JSScript* script = JS_CompileUTF8File(cx, glob, rpath.c_str());
+
+    JSScript* script = JS_CompileUTF8File(cx, global, rpath.c_str());
     jsval rval;
     JSBool evaluatedOK = false;
     if (script) {
         JSAutoEnterCompartment ac;
-        ac.enter(cx, glob);
-        evaluatedOK = JS_ExecuteScript(cx, glob, script, &rval);
+        ac.enter(cx, global);
+        evaluatedOK = JS_ExecuteScript(cx, global, script, &rval);
         if (JS_FALSE == evaluatedOK) {
             fprintf(stderr, "(evaluatedOK == JS_FALSE)\n");
         }
@@ -298,107 +202,14 @@ ScriptingCore::~ScriptingCore()
     }
 }
 
-void ScriptingCore::reportError(JSContext *cx, const char *message, JSErrorReport *report)
-{
-	js_log("%s:%u:%s\n",
-			report->filename ? report->filename : "<no filename=\"filename\">",
-			(unsigned int) report->lineno,
-			message);
-};
-
-
-JSBool ScriptingCore::log(JSContext* cx, uint32_t argc, jsval *vp)
-{
-	if (argc > 0) {
-		JSString *string = NULL;
-		JS_ConvertArguments(cx, argc, JS_ARGV(cx, vp), "S", &string);
-		if (string) {
-			char *cstr = JS_EncodeString(cx, string);
-			js_log(cstr);
-		}
-	}
-	return JS_TRUE;
-}
-
 JSBool ScriptingCore::setReservedSpot(uint32_t i, JSObject *obj, jsval value) {
 	JS_SetReservedSlot(obj, i, value);
-	return JS_TRUE;
-}
-
-JSBool ScriptingCore::executeScript(JSContext *cx, uint32_t argc, jsval *vp)
-{
-    if (argc >= 1) {
-        jsval* argv = JS_ARGV(cx, vp);
-        JSString* str = JS_ValueToString(cx, argv[0]);
-        const char* path = JS_EncodeString(cx, str);
-        JSBool res = false;
-        if (argc == 2 && argv[1].isString()) {
-            JSString* globalName = JSVAL_TO_STRING(argv[1]);
-            const char* name = JS_EncodeString(cx, globalName);
-            js::RootedObject* rootedGlobal = globals[name];
-            if (rootedGlobal) {
-                JS_free(cx, (void*)name);
-                res = ScriptingCore::getInstance()->runScript(path, rootedGlobal->get());
-            } else {
-                JS_ReportError(cx, "Invalid global object: %s", name);
-                return JS_FALSE;
-            }
-        } else {
-            res = ScriptingCore::getInstance()->runScript(path);
-        }
-        JS_free(cx, (void*)path);
-        return res;
-    }
-    return JS_TRUE;
-}
-
-JSBool ScriptingCore::forceGC(JSContext *cx, uint32_t argc, jsval *vp)
-{
-	JSRuntime *rt = JS_GetRuntime(cx);
-	JS_GC(rt);
 	return JS_TRUE;
 }
 
 static void dumpNamedRoot(const char *name, void *addr,  JSGCRootType type, void *data)
 {
     ScriptingCore::js_log("There is a root named '%s' at %p\n", name, addr);
-}
-JSBool ScriptingCore::dumpRoot(JSContext *cx, uint32_t argc, jsval *vp)
-{
-    // JS_DumpNamedRoots is only available on DEBUG versions of SpiderMonkey.
-    // Mac and Simulator versions were compiled with DEBUG.
-#if DEBUG
-    JSContext *_cx = ScriptingCore::getInstance()->getGlobalContext();
-    JSRuntime *rt = JS_GetRuntime(_cx);
-    JS_DumpNamedRoots(rt, dumpNamedRoot, NULL);
-#endif
-    return JS_TRUE;
-}
-
-JSBool ScriptingCore::addRootJS(JSContext *cx, uint32_t argc, jsval *vp)
-{
-    if (argc == 1) {
-        JSObject *o = NULL;
-        if (JS_ConvertArguments(cx, argc, JS_ARGV(cx, vp), "o", &o) == JS_TRUE) {
-            if (JS_AddNamedObjectRoot(cx, &o, "from-js") == JS_FALSE) {
-                js_log("something went wrong when setting an object to the root");
-            }
-        }
-        return JS_TRUE;
-    }
-    return JS_FALSE;
-}
-
-JSBool ScriptingCore::removeRootJS(JSContext *cx, uint32_t argc, jsval *vp)
-{
-    if (argc == 1) {
-        JSObject *o = NULL;
-        if (JS_ConvertArguments(cx, argc, JS_ARGV(cx, vp), "o", &o) == JS_TRUE) {
-            JS_RemoveObjectRoot(cx, &o);
-        }
-        return JS_TRUE;
-    }
-    return JS_FALSE;
 }
 
 static void rootObject(JSContext *cx, JSObject *obj) {
@@ -571,17 +382,17 @@ static void registerDefaultClasses(JSContext* cx, JSObject* global) {
     jsval jscVal = OBJECT_TO_JSVAL(jsc);
     JS_SetProperty(cx, global, "__jsc__", &jscVal);
 
-    JS_DefineFunction(cx, jsc, "garbageCollect", ScriptingCore::forceGC, 0, JSPROP_READONLY | JSPROP_PERMANENT | JSPROP_ENUMERATE );
-    JS_DefineFunction(cx, jsc, "dumpRoot", ScriptingCore::dumpRoot, 0, JSPROP_READONLY | JSPROP_PERMANENT | JSPROP_ENUMERATE );
-    JS_DefineFunction(cx, jsc, "addGCRootObject", ScriptingCore::addRootJS, 1, JSPROP_READONLY | JSPROP_PERMANENT | JSPROP_ENUMERATE );
-    JS_DefineFunction(cx, jsc, "removeGCRootObject", ScriptingCore::removeRootJS, 1, JSPROP_READONLY | JSPROP_PERMANENT | JSPROP_ENUMERATE );
+    JS_DefineFunction(cx, jsc, "garbageCollect", jsb::utils::forceGC, 0, JSPROP_READONLY | JSPROP_PERMANENT | JSPROP_ENUMERATE );
+    JS_DefineFunction(cx, jsc, "dumpRoot", jsb::utils::debug::dumpRoot, 0, JSPROP_READONLY | JSPROP_PERMANENT | JSPROP_ENUMERATE );
+    JS_DefineFunction(cx, jsc, "addGCRootObject", jsb::utils::addRootJS, 1, JSPROP_READONLY | JSPROP_PERMANENT | JSPROP_ENUMERATE );
+    JS_DefineFunction(cx, jsc, "removeGCRootObject", jsb::utils::removeRootJS, 1, JSPROP_READONLY | JSPROP_PERMANENT | JSPROP_ENUMERATE );
 
     // register some global functions
-    JS_DefineFunction(cx, global, "require", ScriptingCore::executeScript, 1, JSPROP_READONLY | JSPROP_PERMANENT);
-    JS_DefineFunction(cx, global, "log", ScriptingCore::log, 0, JSPROP_READONLY | JSPROP_PERMANENT);
-    JS_DefineFunction(cx, global, "forceGC", ScriptingCore::forceGC, 0, JSPROP_READONLY | JSPROP_PERMANENT);
+    JS_DefineFunction(cx, global, "require", jsb::utils::executeScript, 1, JSPROP_READONLY | JSPROP_PERMANENT);
+    JS_DefineFunction(cx, global, "log", jsb::utils::log, 0, JSPROP_READONLY | JSPROP_PERMANENT);
+    JS_DefineFunction(cx, global, "forceGC", jsb::utils::forceGC, 0, JSPROP_READONLY | JSPROP_PERMANENT);
     // should be used only for debug
-    JS_DefineFunction(cx, global, "newGlobal", jsNewGlobal, 1, JSPROP_READONLY | JSPROP_PERMANENT);
+    JS_DefineFunction(cx, global, "newGlobal", jsb::utils::debug::jsNewGlobal, 1, JSPROP_READONLY | JSPROP_PERMANENT);
 
     // register the server socket
     JS_DefineFunction(cx, global, "_socketOpen", jsSocketOpen, 1, JSPROP_READONLY | JSPROP_PERMANENT);

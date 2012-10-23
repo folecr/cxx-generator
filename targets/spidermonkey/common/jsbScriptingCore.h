@@ -10,7 +10,6 @@
 #define __JSB_SCRIPTING_CORE_H__
 
 #include <assert.h>
-#include "cocos2d.h"
 #include "uthash.h"
 #include "jsapi.h"
 #include "jsfriendapi.h"
@@ -41,18 +40,14 @@ public:
      * @param outVal The jsval that will hold the return value of the evaluation.
      * Can be NULL.
      */
-    /* JSBool evalString(const char *string, jsval *outVal, const char *filename = NULL); */
+    // FIXME - evalString() unused. Remove?
+    // JSBool evalString(const char *string, jsval *outVal, const char *filename = NULL);
 
     /**
      * will run the specified string
      * @param string The path of the script to be run
      */
-    virtual JSBool runScript(const char *path, JSObject* glob = NULL, JSContext* cx_ = NULL);
-
-    /**
-     * run a script from script :)
-     */
-    static JSBool executeScript(JSContext *cx, uint32_t argc, jsval *vp);
+    virtual JSBool runScript(const char *path);
 
     /**
      * Will create a new context. If one is already there, it will destroy the old context
@@ -73,40 +68,9 @@ public:
      */
     void addRegisterCallback(sc_register_sth callback);
 
-    /**
-     * @param cx
-     * @param message
-     * @param report
-     */
-    static void reportError(JSContext *cx, const char *message, JSErrorReport *report);
-
-    static void js_log(const char *format, ...);
-
-    /**
-     * Log something using CCLog
-     * @param cx
-     * @param argc
-     * @param vp
-     */
-    static JSBool log(JSContext *cx, uint32_t argc, jsval *vp);
-
     JSBool setReservedSpot(uint32_t i, JSObject *obj, jsval value);
 
-    /**
-     * Force a cycle of GC
-     * @param cx
-     * @param argc
-     * @param vp
-     */
-    static JSBool forceGC(JSContext *cx, uint32_t argc, jsval *vp);
-
-    static void removeAllRoots(JSContext *cx);
-
-    static JSBool dumpRoot(JSContext *cx, uint32_t argc, jsval *vp);
-
-    static JSBool addRootJS(JSContext *cx, uint32_t argc, jsval *vp);
-
-    static JSBool removeRootJS(JSContext *cx, uint32_t argc, jsval *vp);
+    static void js_log(const char *format, ...);
 
     ~ScriptingCore();
 
@@ -119,10 +83,6 @@ protected:
     ScriptingCore();
 
     void string_report(jsval val);
-
-    static void executeJSFunctionWithName(JSContext *cx, JSObject *obj,
-                                          const char *funcName, jsval &dataVal,
-                                          jsval &retval);
 
 };
 
