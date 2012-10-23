@@ -124,7 +124,7 @@ void ScriptingCore::string_report(jsval val) {
     }
 }
 
-// FIXME - Remove?
+// FIXME - evalString() unused. Remove?
 //
 // JSBool ScriptingCore::evalString(const char *string, jsval *outVal, const char *filename)
 // {
