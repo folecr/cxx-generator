@@ -43,7 +43,7 @@ std::map<int,int> ports_sockets;
 
 static void registerDefaultClasses(JSContext* cx, JSObject* global);
 
-static void executeJSFunctionWithName(JSContext *cx, JSObject *obj,
+void jsb::ScriptingCore::executeJSFunctionWithName(JSContext *cx, JSObject *obj,
                                       const char *funcName, jsval &dataVal,
                                       jsval &retval) {
     JSBool hasAction;

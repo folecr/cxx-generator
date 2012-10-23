@@ -108,6 +108,10 @@ public:
 
     static JSBool removeRootJS(JSContext *cx, uint32_t argc, jsval *vp);
 
+    static void executeJSFunctionWithName(JSContext *cx, JSObject *obj,
+                                          const char *funcName, jsval &dataVal,
+                                          jsval &retval);
+
     ~ScriptingCore();
 
 protected:
@@ -119,10 +123,6 @@ protected:
     ScriptingCore();
 
     void string_report(jsval val);
-
-    static void executeJSFunctionWithName(JSContext *cx, JSObject *obj,
-                                          const char *funcName, jsval &dataVal,
-                                          jsval &retval);
 
 };
 
