@@ -4,6 +4,8 @@
 //
 
 #include <inttypes.h>
+#include "stdlib.h"
+#include "assert.h"
 #include "jsapi.h"
 #include "jsfriendapi.h"
 #include "js_bindings_config.h"
@@ -78,12 +80,12 @@ JSBool jsval_to_long( JSContext *cx, jsval vp, long *r )
 JSBool jsval_to_longlong( JSContext *cx, jsval vp, long long *r )
 {
 	JSString *jsstring = JS_ValueToString(cx, vp);
-	JSB_PRECONDITION(jsstr, "Error converting value to string");
+	JSB_PRECONDITION(jsstring, "Error converting value to string");
 
 	char *cstr = JS_EncodeString(cx, jsstring);
 	JSB_PRECONDITION(cstr, "Error encoding string");
 	
-	long long ret = stroll(cstr, NULL, 10);
+	long long ret = strtoll(cstr, NULL, 10);
 	
 	*r = ret;
 	return JS_TRUE;

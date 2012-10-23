@@ -7,16 +7,10 @@
 #ifndef __JS_BINDINGS_CONFIG_H
 #define __JS_BINDINGS_CONFIG_H
 
-
-/** @def JSB_ASSERT_ON_FAIL
- */
-#ifndef JSB_ASSERT_ON_FAIL
-#define JSB_ASSERT_ON_FAIL 0
-#endif
-
+#define JSB_ASSERT_ON_FAIL 1
 
 #if JSB_ASSERT_ON_FAIL
-#define JSB_PRECONDITION( condition, error_msg) do { assert( condition, error_msg ) } while(0)
+#define JSB_PRECONDITION( condition, error_msg) do { assert(condition); } while(0)
 #else
 #define JSB_PRECONDITION(condition, error_msg) do {							\
 	if( ! (condition) ) {														\

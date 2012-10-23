@@ -7,6 +7,10 @@
 //
 
 #include <iostream>
+#include <sys/socket.h>
+#include <errno.h>
+#include <netdb.h>
+#include <netinet/in.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <sys/stat.h>
@@ -33,6 +37,9 @@ char *_js_log_buf = NULL;
 
 std::vector<sc_register_sth> registrationList;
 std::map<std::string, js::RootedObject*> globals;
+
+// port ~> socket map
+std::map<int,int> ports_sockets;
 
 static void registerDefaultClasses(JSContext* cx, JSObject* global);
 
