@@ -36,7 +36,6 @@ js_type_class_t *_js_global_type_ht = NULL;
 char *_js_log_buf = NULL;
 
 std::vector<sc_register_sth> registrationList;
-std::map<std::string, js::RootedObject*> globals;
 
 // port ~> socket map
 std::map<int,int> ports_sockets;
@@ -193,14 +192,8 @@ JSBool jsNewGlobal(JSContext* cx, unsigned argc, jsval* vp)
 {
     if (argc == 1) {
         jsval *argv = JS_ARGV(cx, vp);
-        JSString *jsstr = JS_ValueToString(cx, argv[0]);
-        std::string key = JS_EncodeString(cx, jsstr);
-        js::RootedObject *global = globals[key];
-        if (!global) {
-            global = new js::RootedObject(cx, NewGlobalObject(cx));
-            JS_WrapObject(cx, global->address());
-            globals[key] = global;
-        }
+        js::RootedObject *global = new js::RootedObject(cx, NewGlobalObject(cx));
+        JS_WrapObject(cx, global->address());
         JS_SET_RVAL(cx, vp, OBJECT_TO_JSVAL(*global));
         return JS_TRUE;
     }
@@ -245,7 +238,7 @@ static size_t readFileInMemory(const char *path, unsigned char **buff) {
     return readBytes;
 }
 
-JSBool ScriptingCore::runScript(const char *path, JSObject* glob, JSContext* cx_)
+JSBool ScriptingCore::runScript(const char *path)
 {
     cocos2d::CCFileUtils *futil = cocos2d::CCFileUtils::sharedFileUtils();
     if (!path) {
@@ -257,19 +250,14 @@ JSBool ScriptingCore::runScript(const char *path, JSObject* glob, JSContext* cx_
     } else {
         rpath = futil->fullPathFromRelativePath(path);
     }
-    if (glob == NULL) {
-        glob = global;
-    }
-    if (cx_ == NULL) {
-        cx_ = cx;
-    }
-    JSScript* script = JS_CompileUTF8File(cx, glob, rpath.c_str());
+
+    JSScript* script = JS_CompileUTF8File(cx, global, rpath.c_str());
     jsval rval;
     JSBool evaluatedOK = false;
     if (script) {
         JSAutoEnterCompartment ac;
-        ac.enter(cx, glob);
-        evaluatedOK = JS_ExecuteScript(cx, glob, script, &rval);
+        ac.enter(cx, global);
+        evaluatedOK = JS_ExecuteScript(cx, global, script, &rval);
         if (JS_FALSE == evaluatedOK) {
             fprintf(stderr, "(evaluatedOK == JS_FALSE)\n");
         }
@@ -322,20 +310,7 @@ JSBool ScriptingCore::executeScript(JSContext *cx, uint32_t argc, jsval *vp)
         JSString* str = JS_ValueToString(cx, argv[0]);
         const char* path = JS_EncodeString(cx, str);
         JSBool res = false;
-        if (argc == 2 && argv[1].isString()) {
-            JSString* globalName = JSVAL_TO_STRING(argv[1]);
-            const char* name = JS_EncodeString(cx, globalName);
-            js::RootedObject* rootedGlobal = globals[name];
-            if (rootedGlobal) {
-                JS_free(cx, (void*)name);
-                res = ScriptingCore::getInstance()->runScript(path, rootedGlobal->get());
-            } else {
-                JS_ReportError(cx, "Invalid global object: %s", name);
-                return JS_FALSE;
-            }
-        } else {
-            res = ScriptingCore::getInstance()->runScript(path);
-        }
+        res = ScriptingCore::getInstance()->runScript(path);
         JS_free(cx, (void*)path);
         return res;
     }
