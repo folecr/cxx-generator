@@ -10,7 +10,6 @@
 #define __JSB_SCRIPTING_CORE_H__
 
 #include <assert.h>
-#include "cocos2d.h"
 #include "uthash.h"
 #include "jsapi.h"
 #include "jsfriendapi.h"
