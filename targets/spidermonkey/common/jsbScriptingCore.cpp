@@ -20,13 +20,6 @@
 #include "jsbScriptingCore.h"
 #include "jsdbgapi.h"
 
-#ifdef ANDROID
-#include <android/log.h>
-#include <jni/JniHelper.h>
-#define  LOG_TAG    "jsbScriptingCore"
-#define  LOGD(...)  __android_log_print(ANDROID_LOG_DEBUG,LOG_TAG,__VA_ARGS__)
-#endif
-
 using namespace jsb;
 
 js_proxy_t *_native_js_global_ht = NULL;
@@ -69,11 +62,7 @@ void ScriptingCore::js_log(const char *format, ...) {
     int len = vsnprintf(_js_log_buf, 256, format, vl);
     va_end(vl);
     if (len) {
-#ifdef ANDROID
-        __android_log_print(ANDROID_LOG_DEBUG, "JS: ", _js_log_buf);
-#else
         fprintf(stderr, "JS: %s\n", _js_log_buf);
-#endif
     }
 }
 
