@@ -48,17 +48,6 @@ void ScriptingCore::js_log(const char *format, ...) {
     }
 }
 
-void sc_finalize(JSFreeOp *freeOp, JSObject *obj) {
-    return;
-}
-
-static JSClass global_class = {
-    "global", JSCLASS_GLOBAL_FLAGS,
-    JS_PropertyStub, JS_PropertyStub, JS_PropertyStub, JS_StrictPropertyStub,
-    JS_EnumerateStub, JS_ResolveStub, JS_ConvertStub, sc_finalize,
-    JSCLASS_NO_OPTIONAL_MEMBERS
-};
-
 ScriptingCore::ScriptingCore()
 {
     // set utf8 strings internally (we don't need utf16)
@@ -122,29 +111,9 @@ void ScriptingCore::addRegisterCallback(sc_register_sth callback) {
     registrationList.push_back(callback);
 }
 
-JSObject* NewGlobalObject(JSContext* cx)
-{
-    JSObject* glob = JS_NewGlobalObject(cx, &global_class, NULL);
-    if (!glob) {
-        return NULL;
-    }
-
-    JSAutoEnterCompartment ac;
-    ac.enter(cx, glob);
-
-    if (!JS_InitStandardClasses(cx, glob))
-        return NULL;
-    if (!JS_InitReflect(cx, glob))
-        return NULL;
-    if (!JS_DefineDebuggerObject(cx, glob))
-        return NULL;
-
-    return glob;
-}
-
 void ScriptingCore::createGlobalContext() {
     if (this->cx && this->rt) {
-        ScriptingCore::removeAllRoots(this->cx);
+        jsb::utils::removeAllRoots(this->cx);
         JS_DestroyContext(this->cx);
         JS_DestroyRuntime(this->rt);
         this->cx = NULL;
@@ -156,8 +125,8 @@ void ScriptingCore::createGlobalContext() {
     JS_SetVersion(this->cx, JSVERSION_LATEST);
     JS_SetOptions(this->cx, JS_GetOptions(this->cx) & ~JSOPTION_METHODJIT);
     JS_SetOptions(this->cx, JS_GetOptions(this->cx) & ~JSOPTION_METHODJIT_ALWAYS);
-    JS_SetErrorReporter(this->cx, ScriptingCore::reportError);
-    this->global = NewGlobalObject(this->cx);//JS_NewCompartmentAndGlobalObject(cx, &global_class, NULL);
+    JS_SetErrorReporter(this->cx, jsb::utils::reportError);
+    this->global = jsb::utils::NewGlobalObject(this->cx);//JS_NewCompartmentAndGlobalObject(cx, &global_class, NULL);
     for (std::vector<sc_register_sth>::iterator it = registrationList.begin(); it != registrationList.end(); it++) {
         sc_register_sth callback = *it;
         callback(this->cx, this->global);
@@ -166,7 +135,7 @@ void ScriptingCore::createGlobalContext() {
 
 JSBool ScriptingCore::runScript(const char *path)
 {
-    cocos2d::CCFileUtils *futil = cocos2d::CCFileUtils::sharedFileUtils();
+    // cocos2d::CCFileUtils *futil = cocos2d::CCFileUtils::sharedFileUtils();
     if (!path) {
         return false;
     }
@@ -174,7 +143,7 @@ JSBool ScriptingCore::runScript(const char *path)
     if (path[0] == '/') {
         rpath = path;
     } else {
-        rpath = futil->fullPathFromRelativePath(path);
+        // rpath = futil->fullPathFromRelativePath(path);
     }
 
     JSScript* script = JS_CompileUTF8File(cx, global, rpath.c_str());
