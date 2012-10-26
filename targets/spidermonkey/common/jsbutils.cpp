@@ -4,10 +4,10 @@ using namespace jsb::utils;
 
 void reportError(JSContext *cx, const char *message, JSErrorReport *report)
 {
-	js_log("%s:%u:%s\n",
-			report->filename ? report->filename : "<no filename=\"filename\">",
-			(unsigned int) report->lineno,
-			message);
+	// js_log("%s:%u:%s\n",
+	// 		report->filename ? report->filename : "<no filename=\"filename\">",
+	// 		(unsigned int) report->lineno,
+	// 		message);
 };
 
 JSBool log(JSContext* cx, uint32_t argc, jsval *vp)
@@ -17,7 +17,7 @@ JSBool log(JSContext* cx, uint32_t argc, jsval *vp)
 		JS_ConvertArguments(cx, argc, JS_ARGV(cx, vp), "S", &string);
 		if (string) {
 			char *cstr = JS_EncodeString(cx, string);
-			js_log(cstr);
+			// js_log(cstr);
 		}
 	}
 	return JS_TRUE;
@@ -52,7 +52,7 @@ JSBool addRootJS(JSContext *cx, uint32_t argc, jsval *vp)
         JSObject *o = NULL;
         if (JS_ConvertArguments(cx, argc, JS_ARGV(cx, vp), "o", &o) == JS_TRUE) {
             if (JS_AddNamedObjectRoot(cx, &o, "from-js") == JS_FALSE) {
-                js_log("something went wrong when setting an object to the root");
+                // js_log("something went wrong when setting an object to the root");
             }
         }
         return JS_TRUE;
