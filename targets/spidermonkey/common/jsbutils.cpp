@@ -146,9 +146,9 @@ JSBool jsb::utils::debug::dumpRoot(JSContext *unused_cx, uint32_t unused_argc, j
     // JS_DumpNamedRoots is only available on DEBUG versions of SpiderMonkey.
     // Mac and Simulator versions were compiled with DEBUG.
 #if DEBUG
-    JSContext *_cx = ScriptingCore::getInstance()->getGlobalContext();
-    JSRuntime *rt = JS_GetRuntime(_cx);
-    JS_DumpNamedRoots(rt, dumpNamedRoot, NULL);
+    // JSContext *_cx = ScriptingCore::getInstance()->getGlobalContext();
+    // JSRuntime *rt = JS_GetRuntime(_cx);
+    // JS_DumpNamedRoots(rt, dumpNamedRoot, NULL);
 #endif
     return JS_TRUE;
 }
