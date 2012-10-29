@@ -24,11 +24,6 @@ class ScriptingCore
 
 public:
 
-    static ScriptingCore *getInstance() {
-        static ScriptingCore instance;
-        return &instance;
-    };
-
     /**
      * initialize everything
      */
