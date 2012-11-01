@@ -1,36 +1,39 @@
+#include "uthash.h"
 #include "jsbutils.h"
+#include "jsdbgapi.h"
+#include "spidermonkey_specifics.h"
 
-using namespace jsb::utils;
-
-void reportError(JSContext *cx, const char *message, JSErrorReport *report)
+void jsb::utils::reportError(JSContext *cx, const char *message, JSErrorReport *report)
 {
+    // FIXME
 	// js_log("%s:%u:%s\n",
 	// 		report->filename ? report->filename : "<no filename=\"filename\">",
 	// 		(unsigned int) report->lineno,
 	// 		message);
 };
 
-JSBool log(JSContext* cx, uint32_t argc, jsval *vp)
+JSBool jsb::utils::log(JSContext* cx, uint32_t argc, jsval *vp)
 {
 	if (argc > 0) {
 		JSString *string = NULL;
 		JS_ConvertArguments(cx, argc, JS_ARGV(cx, vp), "S", &string);
 		if (string) {
 			char *cstr = JS_EncodeString(cx, string);
+            // FIXME
 			// js_log(cstr);
 		}
 	}
 	return JS_TRUE;
 }
 
-JSBool forceGC(JSContext *cx, uint32_t argc, jsval *vp)
+JSBool jsb::utils::forceGC(JSContext *cx, uint32_t argc, jsval *vp)
 {
 	JSRuntime *rt = JS_GetRuntime(cx);
 	JS_GC(rt);
 	return JS_TRUE;
 }
 
-void removeAllRoots(JSContext *cx) {
+void jsb::utils::removeAllRoots(JSContext *cx) {
     js_proxy_t *current, *tmp;
     HASH_ITER(hh, _js_native_global_ht, current, tmp) {
         JS_RemoveObjectRoot(cx, &current->obj);
@@ -46,12 +49,13 @@ void removeAllRoots(JSContext *cx) {
     HASH_CLEAR(hh, _js_global_type_ht);
 }
 
-JSBool addRootJS(JSContext *cx, uint32_t argc, jsval *vp)
+JSBool jsb::utils::addRootJS(JSContext *cx, uint32_t argc, jsval *vp)
 {
     if (argc == 1) {
         JSObject *o = NULL;
         if (JS_ConvertArguments(cx, argc, JS_ARGV(cx, vp), "o", &o) == JS_TRUE) {
             if (JS_AddNamedObjectRoot(cx, &o, "from-js") == JS_FALSE) {
+                // FIXME
                 // js_log("something went wrong when setting an object to the root");
             }
         }
@@ -60,7 +64,7 @@ JSBool addRootJS(JSContext *cx, uint32_t argc, jsval *vp)
     return JS_FALSE;
 }
 
-JSBool removeRootJS(JSContext *cx, uint32_t argc, jsval *vp)
+JSBool jsb::utils::removeRootJS(JSContext *cx, uint32_t argc, jsval *vp)
 {
     if (argc == 1) {
         JSObject *o = NULL;
@@ -72,7 +76,7 @@ JSBool removeRootJS(JSContext *cx, uint32_t argc, jsval *vp)
     return JS_FALSE;
 }
 
-void executeJSFunctionWithName(JSContext *cx, JSObject *obj,
+void jsb::utils::executeJSFunctionWithName(JSContext *cx, JSObject *obj,
                                       const char *funcName, jsval &dataVal,
                                       jsval &retval) {
     JSBool hasAction;
@@ -91,18 +95,50 @@ void executeJSFunctionWithName(JSContext *cx, JSObject *obj,
 
 }
 
-JSBool executeScript(JSContext *cx, uint32_t argc, jsval *vp)
+JSBool jsb::utils::executeScript(JSContext *cx, uint32_t argc, jsval *vp)
 {
     if (argc >= 1) {
         jsval* argv = JS_ARGV(cx, vp);
         JSString* str = JS_ValueToString(cx, argv[0]);
         const char* path = JS_EncodeString(cx, str);
         JSBool res = false;
-        res = ScriptingCore::getInstance()->runScript(path);
+        // FIXME
+        // res = ScriptingCore::getInstance()->runScript(path);
         JS_free(cx, (void*)path);
         return res;
     }
     return JS_TRUE;
+}
+
+static void _finalize(JSFreeOp *freeOp, JSObject *obj) {
+    return;
+}
+
+static JSClass global_class = {
+    "global", JSCLASS_GLOBAL_FLAGS,
+    JS_PropertyStub, JS_PropertyStub, JS_PropertyStub, JS_StrictPropertyStub,
+    JS_EnumerateStub, JS_ResolveStub, JS_ConvertStub, _finalize,
+    JSCLASS_NO_OPTIONAL_MEMBERS
+};
+
+JSObject* jsb::utils::NewGlobalObject(JSContext* cx)
+{
+    JSObject* glob = JS_NewGlobalObject(cx, &global_class, NULL);
+    if (!glob) {
+        return NULL;
+    }
+
+    JSAutoEnterCompartment ac;
+    ac.enter(cx, glob);
+
+    if (!JS_InitStandardClasses(cx, glob))
+        return NULL;
+    if (!JS_InitReflect(cx, glob))
+        return NULL;
+    if (!JS_DefineDebuggerObject(cx, glob))
+        return NULL;
+
+    return glob;
 }
 
 JSBool jsb::utils::debug::dumpRoot(JSContext *unused_cx, uint32_t unused_argc, jsval *unused_vp)

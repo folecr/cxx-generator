@@ -44,7 +44,9 @@ namespace jsb {
         /**
          * run a script from script :)
          */
-        static JSBool executeScript(JSContext *cx, uint32_t argc, jsval *vp);
+        JSBool executeScript(JSContext *cx, uint32_t argc, jsval *vp);
+        
+        JSObject* NewGlobalObject(JSContext* cx);
 
         namespace debug {
 
