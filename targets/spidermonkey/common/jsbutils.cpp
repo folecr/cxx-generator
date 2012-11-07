@@ -123,20 +123,19 @@ static JSClass global_class = {
 
 JSObject* jsb::utils::NewGlobalObject(JSContext* cx)
 {
-    JSObject* glob = JS_NewGlobalObject(cx, &global_class, NULL);
-    if (!glob) {
-        return NULL;
-    }
-
-    JSAutoEnterCompartment ac;
-    ac.enter(cx, glob);
-
-    if (!JS_InitStandardClasses(cx, glob))
-        return NULL;
-    if (!JS_InitReflect(cx, glob))
-        return NULL;
-    if (!JS_DefineDebuggerObject(cx, glob))
-        return NULL;
+	JSObject* glob = JS_NewGlobalObject(cx, &global_class, NULL);
+	if (!glob) {
+		return NULL;
+	}
+	JSAutoCompartment ac(cx, glob);
+	JSBool ok = JS_TRUE;
+	ok = JS_InitStandardClasses(cx, glob);
+	if (ok)
+		JS_InitReflect(cx, glob);
+	if (ok)
+		ok = JS_DefineDebuggerObject(cx, glob);
+	if (!ok)
+		return NULL;
 
     return glob;
 }
@@ -157,8 +156,21 @@ JSBool jsb::utils::debug::jsNewGlobal(JSContext* cx, unsigned argc, jsval* vp)
 {
     if (argc == 1) {
         jsval *argv = JS_ARGV(cx, vp);
-        js::RootedObject *global = new js::RootedObject(cx, NewGlobalObject(cx));
-        JS_WrapObject(cx, global->address());
+        JSString *jsstr = JS_ValueToString(cx, argv[0]);
+        std::string key = JS_EncodeString(cx, jsstr);
+        js::RootedObject *global = globals[key];
+        if (!global) {
+            JSObject* g = NewGlobalObject(cx);
+            global = new js::RootedObject(cx, g);
+            JS_WrapObject(cx, global->address());
+            globals[key] = global;
+            // register everything on the list on this new global object
+			JSAutoCompartment ac(cx, g);
+            for (std::vector<sc_register_sth>::iterator it = registrationList.begin(); it != registrationList.end(); it++) {
+                sc_register_sth callback = *it;
+                callback(cx, g);
+            }
+        }
         JS_SET_RVAL(cx, vp, OBJECT_TO_JSVAL(*global));
         return JS_TRUE;
     }
