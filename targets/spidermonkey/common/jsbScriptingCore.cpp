@@ -150,8 +150,7 @@ JSBool ScriptingCore::runScript(const char *path)
     jsval rval;
     JSBool evaluatedOK = false;
     if (script) {
-        JSAutoEnterCompartment ac;
-        ac.enter(cx, global);
+        JSAutoCompartment ac(cx, global);
         evaluatedOK = JS_ExecuteScript(cx, global, script, &rval);
         if (JS_FALSE == evaluatedOK) {
             fprintf(stderr, "(evaluatedOK == JS_FALSE)\n");

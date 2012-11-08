@@ -2,6 +2,10 @@
 #include "jsbutils.h"
 #include "jsdbgapi.h"
 #include "spidermonkey_specifics.h"
+#include "jsbScriptingCore.h"
+#include <string>
+#include <vector>
+#include <map>
 
 void jsb::utils::reportError(JSContext *cx, const char *message, JSErrorReport *report)
 {
@@ -152,6 +156,9 @@ JSBool jsb::utils::debug::dumpRoot(JSContext *unused_cx, uint32_t unused_argc, j
     return JS_TRUE;
 }
 
+static std::vector<jsb::sc_register_sth> registrationList;
+static std::map<std::string, js::RootedObject*> globals;
+
 JSBool jsb::utils::debug::jsNewGlobal(JSContext* cx, unsigned argc, jsval* vp)
 {
     if (argc == 1) {
@@ -166,8 +173,8 @@ JSBool jsb::utils::debug::jsNewGlobal(JSContext* cx, unsigned argc, jsval* vp)
             globals[key] = global;
             // register everything on the list on this new global object
 			JSAutoCompartment ac(cx, g);
-            for (std::vector<sc_register_sth>::iterator it = registrationList.begin(); it != registrationList.end(); it++) {
-                sc_register_sth callback = *it;
+            for (std::vector<jsb::sc_register_sth>::iterator it = registrationList.begin(); it != registrationList.end(); it++) {
+                jsb::sc_register_sth callback = *it;
                 callback(cx, g);
             }
         }

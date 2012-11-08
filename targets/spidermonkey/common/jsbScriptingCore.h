@@ -10,14 +10,15 @@
 #define __JSB_SCRIPTING_CORE_H__
 
 #include <assert.h>
+#include <string>
 #include "uthash.h"
 #include "jsapi.h"
 #include "jsfriendapi.h"
 #include "spidermonkey_specifics.h"
 
-typedef void (*sc_register_sth)(JSContext* cx, JSObject* global);
-
 namespace jsb {
+
+typedef void (*sc_register_sth)(JSContext* cx, JSObject* global);
 
 class ScriptingCore
 {
