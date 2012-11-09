@@ -64,7 +64,7 @@ if [ -z "${TEST_ROOT+aaa}" ]; then
 fi
 
 if [ -z "${OUTPUT_ROOT+aaa}" ]; then
-    OUTPUT_ROOT="$TEST_ROOT"
+    OUTPUT_ROOT="$TEST_ROOT/simple_test_bindings"
 fi
 
 echo "Paths"
@@ -97,4 +97,4 @@ echo ---
 # Generate bindings for simpletest using Android's system headers
 echo "Generating bindings for simpletest with Android headers..."
 set -x
-LD_LIBRARY_PATH=${CLANG_ROOT}/lib $PYTHON_BIN ${CXX_GENERATOR_ROOT}/generator.py ${TEST_ROOT}/test.ini -s testandroid -o ${OUTPUT_ROOT}/simple_test_bindings
+LD_LIBRARY_PATH=${CLANG_ROOT}/lib $PYTHON_BIN ${CXX_GENERATOR_ROOT}/generator.py ${TEST_ROOT}/test.ini -s testandroid -o ${OUTPUT_ROOT}
