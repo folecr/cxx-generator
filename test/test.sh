@@ -21,26 +21,8 @@ CXX_GENERATOR_ROOT
 EOF
 }
 
-while getopts "dvh" OPTION; do
-case "$OPTION" in
-d)
-debug=1
-;;
-v)
-verbose=1
-;;
-h)
-usage
-exit 0
-;;
-esac
-done
-
 # exit this script if any commmand fails
 set -e
-
-# find current dir
-DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 
 # read user.cfg if it exists and is readable
 
@@ -68,18 +50,51 @@ if [ -z "${PYTHON_BIN+aaa}" ]; then
     PYTHON_BIN="/usr/bin/python2.7"
 fi
 
+# find directory where this script lives
+DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+
 # paths with defaults hardcoded to relative paths
 
 if [ -z "${CXX_GENERATOR_ROOT+aaa}" ]; then
     CXX_GENERATOR_ROOT="$DIR/.."
 fi
 
-echo "CLANG_ROOT: $CLANG_ROOT"
-echo "NDK_ROOT: $NDK_ROOT"
-echo "CXX_GENERATOR_ROOT: $CXX_GENERATOR_ROOT"
-echo "PYTHON_BIN: $PYTHON_BIN"
+if [ -z "${TEST_ROOT+aaa}" ]; then
+    TEST_ROOT="$CXX_GENERATOR_ROOT/test"
+fi
+
+if [ -z "${OUTPUT_ROOT+aaa}" ]; then
+    OUTPUT_ROOT="$TEST_ROOT"
+fi
+
+echo "Paths"
+echo "    NDK_ROOT: $NDK_ROOT"
+echo "    CLANG_ROOT: $CLANG_ROOT"
+echo "    PYTHON_BIN: $PYTHON_BIN"
+echo "    CXX_GENERATOR_ROOT: $CXX_GENERATOR_ROOT"
+echo "    TEST_ROOT: $TEST_ROOT"
+
+# write userconf.ini
+
+_CONF_INI_FILE="$PWD/userconf.ini"
+if [ -f "$_CONF_INI_FILE" ]
+then
+    rm "$_CONF_INI_FILE"
+fi
+
+_CONTENTS=""
+_CONTENTS+="[DEFAULT]"'\n'
+_CONTENTS+="androidndkdir=$NDK_ROOT"'\n'
+_CONTENTS+="clangllvmdir=$CLANG_ROOT"'\n'
+_CONTENTS+="cxxgeneratordir=$CXX_GENERATOR_ROOT"'\n'
+echo 
+echo "generating userconf.ini..."
+echo ---
+echo -e "$_CONTENTS"
+echo -e "$_CONTENTS" > "$_CONF_INI_FILE"
+echo ---
 
 # Generate bindings for simpletest using Android's system headers
 echo "Generating bindings for simpletest with Android headers..."
 set -x
-LD_LIBRARY_PATH=${CLANG_ROOT}/lib $PYTHON_BIN ${CXX_GENERATOR_ROOT}/generator.py ${CXX_GENERATOR_ROOT}/test/test.ini -s testandroid -o ./simple_test_bindings
+LD_LIBRARY_PATH=${CLANG_ROOT}/lib $PYTHON_BIN ${CXX_GENERATOR_ROOT}/generator.py ${TEST_ROOT}/test.ini -s testandroid -o ${OUTPUT_ROOT}/simple_test_bindings
